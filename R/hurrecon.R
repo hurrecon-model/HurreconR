@@ -980,6 +980,152 @@ get_regional_peak_wind <- function(hur_id, mm, width, time_step, water, timing) 
   return(hur_brick)
 }
 
+#' get_regional_summary compiles regional results for all hurricanes.
+#' Results are saved in a GeoTiff file (summary.tif) with 7 layers and in
+#' a CSV file of hurricane ids and maximum enhanced Fujita scale values
+#' (summary.csv) on the region subdirectory.
+#' @return no return value
+#' @noRd
+
+get_regional_summary <- function() {
+  # get current working directory
+  cwd <- getwd()
+
+  # read ids file
+  ids_file <- paste(cwd, "/input/ids.csv", sep="")
+  check_file_exists(ids_file)
+  ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
+  names(ii)[1] <- "hur_id"
+  ii_rows <- nrow(ii)
+
+  # read land-water file
+  land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+  check_file_exists(land_water_file)
+  land_water <- raster::raster(land_water_file)
+  land_water_matrix <- raster::as.matrix(land_water)
+
+  # get regional values
+  nrows <- dim(land_water)[1]
+  ncols <- dim(land_water)[2]
+
+  lat_min <- raster::extent(land_water)[3]
+  lat_max <- raster::extent(land_water)[4]
+
+  lon_min <- raster::extent(land_water)[1]
+  lon_max <- raster::extent(land_water)[2]
+
+  # create data frame for peak Fujita value across region
+  kk <- data.frame(hur_id=character(ii_rows), efmax=numeric(ii_rows), 
+    stringsAsFactors=FALSE)
+
+  # create arrays for enhanced Fujita values
+  efm <- matrix(0, nrows, ncols)
+  ef0 <- matrix(0, nrows, ncols)
+  ef1 <- matrix(0, nrows, ncols)
+  ef2 <- matrix(0, nrows, ncols)
+  ef3 <- matrix(0, nrows, ncols)
+  ef4 <- matrix(0, nrows, ncols)
+  ef5 <- matrix(0, nrows, ncols)
+
+  # record values for each hurricane
+  for (i in 1:ii_rows) {
+    # get hurricane name
+    hur_id <- ii$hur_id[i]
+
+    # read regional hurricane file in GeoTiff format
+    hur_brick_file <- paste(cwd, "/region/", hur_id, ".tif", sep="")
+    check_file_exists(hur_brick_file)
+    hur_brick <- raster::brick(hur_brick_file)
+
+    # get enhanced Fujita scale layer
+    ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
+    ff_layer_matrix <- raster::as.matrix(ff_layer)
+
+    # update peak Fujita value
+    efmax <- raster::maxValue(ff_layer) - 2
+    kk[i, ] <- c(hur_id, efmax)
+
+    # update enhanced Fujita scale
+    for (j in 1:nrows) {
+      for (k in 1:ncols) {
+        val <- ff_layer_matrix[j, k]
+
+        if (val > 0 && efm[j, k] < val) {
+            efm[j, k] <- val
+          }
+
+        if (val == 2) {
+          ef0[j, k] <- ef0[j, k] + 1
+      
+        } else if (val == 3) {
+          ef0[j, k] <- ef0[j, k] + 1
+          ef1[j, k] <- ef1[j, k] + 1
+      
+        } else if (val == 4) {
+          ef0[j, k] <- ef0[j, k] + 1
+          ef1[j, k] <- ef1[j, k] + 1
+          ef2[j, k] <- ef2[j, k] + 1
+
+        } else if (val == 5) {
+          ef0[j, k] <- ef0[j, k] + 1
+          ef1[j, k] <- ef1[j, k] + 1
+          ef2[j, k] <- ef2[j, k] + 1
+          ef3[j, k] <- ef3[j, k] + 1
+        
+        } else if (val == 6) {
+          ef0[j, k] <- ef0[j, k] + 1
+          ef1[j, k] <- ef1[j, k] + 1
+          ef2[j, k] <- ef2[j, k] + 1
+          ef3[j, k] <- ef3[j, k] + 1
+          ef4[j, k] <- ef4[j, k] + 1
+
+        } else if (val == 7) {
+          ef0[j, k] <- ef0[j, k] + 1
+          ef1[j, k] <- ef1[j, k] + 1
+          ef2[j, k] <- ef2[j, k] + 1
+          ef3[j, k] <- ef3[j, k] + 1
+          ef4[j, k] <- ef4[j, k] + 1          
+          ef5[j, k] <- ef5[j, k] + 1          
+        }
+      }
+    }
+  }
+
+  # create raster layers
+  efm_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=efm)
+
+  ef0_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ef0)
+  
+  ef1_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ef1)
+  
+  ef2_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ef2)
+  
+  ef3_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ef3)
+
+  ef4_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ef4)
+
+  ef5_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ef5)
+
+  # create raster brick
+  sum_brick <- raster::brick(efm_raster, ef0_raster, ef1_raster, ef2_raster, ef3_raster, ef4_raster, ef5_raster)
+
+  # save to csv file
+  peak_file <- paste(cwd, "/region/summary.csv", sep="")
+  write.csv(kk, peak_file, row.names=FALSE)
+
+  # save to file in Geotiff format
+  sum_brick_file <- paste(cwd, "/region/summary.tif", sep="")
+  rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
+  raster::writeRaster(sum_brick, sum_brick_file, overwrite=TRUE)
+}
+
 #' get_track_lat_lon returns a data frame of track data for the specified hurricane
 #' if the maximum enhanced Fujita value exceeds a specified value.
 #' @param hur_id hurricane id
@@ -1592,7 +1738,9 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 #' wind (rmw) and profile exponent (s_par) for the given hurricane are used, 
 #' if available. If time_step is NULL, the time step is calculated. If water 
 #' is FALSE, results are calculated for land areas only. Results for each 
-#' hurricane are saved in a GeoTiff file on the region subdirectory.
+#' hurricane are saved in a GeoTiff file on the region subdirectory. Summary
+#' results for all hurricanes (summary.tif, summary.csv) are also calculated 
+#' and saved to the region subdirectory.
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to calculate results over water
@@ -1633,6 +1781,9 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE) 
     # generate & save regional results
     hurrecon_model_region(hur_id, width, time_step, water, save=TRUE, timing=FALSE)
   }
+
+  # generate & save regional summary files
+  get_regional_summary()
 
   # display total elapsed time
   elapsed_time <- format_time_difference_hms(start_time, Sys.time())
@@ -1755,155 +1906,6 @@ hurrecon_summarize_site <- function(hur_id, site_name) {
   if (pk$ef5[1] > 0) cat("EF5:", round(pk$ef5[1], 1), "hours\n")
 }
 
-#' @description
-#' hurrecon_summarize_region compiles regional results for all hurricanes.
-#' Results are saved in a GeoTiff file (summary.tif) with 7 layers and in
-#' a CSV file of hurricane ids and maximum enhanced Fujita scale values
-#' (summary.csv) on the region subdirectory. This function should be run
-#' whenever new regional results are generated before using the plotting
-#' function hurrecon_plot_region_all.
-#' @return no return value
-#' @export
-#' @rdname summarizing
-
-hurrecon_summarize_region <- function() {
-  # get current working directory
-  cwd <- getwd()
-
-  # read ids file
-  ids_file <- paste(cwd, "/input/ids.csv", sep="")
-  check_file_exists(ids_file)
-  ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
-  names(ii)[1] <- "hur_id"
-  ii_rows <- nrow(ii)
-
-  # read land-water file
-  land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
-  check_file_exists(land_water_file)
-  land_water <- raster::raster(land_water_file)
-  land_water_matrix <- raster::as.matrix(land_water)
-
-  # get regional values
-  nrows <- dim(land_water)[1]
-  ncols <- dim(land_water)[2]
-
-  lat_min <- raster::extent(land_water)[3]
-  lat_max <- raster::extent(land_water)[4]
-
-  lon_min <- raster::extent(land_water)[1]
-  lon_max <- raster::extent(land_water)[2]
-
-  # create data frame for peak Fujita value across region
-  kk <- data.frame(hur_id=character(ii_rows), efmax=numeric(ii_rows), 
-    stringsAsFactors=FALSE)
-
-  # create arrays for enhanced Fujita values
-  efm <- matrix(0, nrows, ncols)
-  ef0 <- matrix(0, nrows, ncols)
-  ef1 <- matrix(0, nrows, ncols)
-  ef2 <- matrix(0, nrows, ncols)
-  ef3 <- matrix(0, nrows, ncols)
-  ef4 <- matrix(0, nrows, ncols)
-  ef5 <- matrix(0, nrows, ncols)
-
-  # record values for each hurricane
-  for (i in 1:ii_rows) {
-    # get hurricane name
-    hur_id <- ii$hur_id[i]
-
-    # read regional hurricane file in GeoTiff format
-    hur_brick_file <- paste(cwd, "/region/", hur_id, ".tif", sep="")
-    check_file_exists(hur_brick_file)
-    hur_brick <- raster::brick(hur_brick_file)
-
-    # get enhanced Fujita scale layer
-    ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
-    ff_layer_matrix <- raster::as.matrix(ff_layer)
-
-    # update peak Fujita value
-    efmax <- raster::maxValue(ff_layer) - 2
-    kk[i, ] <- c(hur_id, efmax)
-
-    # update enhanced Fujita scale
-    for (j in 1:nrows) {
-      for (k in 1:ncols) {
-        val <- ff_layer_matrix[j, k]
-
-        if (val > 0 && efm[j, k] < val) {
-            efm[j, k] <- val
-          }
-
-        if (val == 2) {
-          ef0[j, k] <- ef0[j, k] + 1
-      
-        } else if (val == 3) {
-          ef0[j, k] <- ef0[j, k] + 1
-          ef1[j, k] <- ef1[j, k] + 1
-      
-        } else if (val == 4) {
-          ef0[j, k] <- ef0[j, k] + 1
-          ef1[j, k] <- ef1[j, k] + 1
-          ef2[j, k] <- ef2[j, k] + 1
-
-        } else if (val == 5) {
-          ef0[j, k] <- ef0[j, k] + 1
-          ef1[j, k] <- ef1[j, k] + 1
-          ef2[j, k] <- ef2[j, k] + 1
-          ef3[j, k] <- ef3[j, k] + 1
-        
-        } else if (val == 6) {
-          ef0[j, k] <- ef0[j, k] + 1
-          ef1[j, k] <- ef1[j, k] + 1
-          ef2[j, k] <- ef2[j, k] + 1
-          ef3[j, k] <- ef3[j, k] + 1
-          ef4[j, k] <- ef4[j, k] + 1
-
-        } else if (val == 7) {
-          ef0[j, k] <- ef0[j, k] + 1
-          ef1[j, k] <- ef1[j, k] + 1
-          ef2[j, k] <- ef2[j, k] + 1
-          ef3[j, k] <- ef3[j, k] + 1
-          ef4[j, k] <- ef4[j, k] + 1          
-          ef5[j, k] <- ef5[j, k] + 1          
-        }
-      }
-    }
-  }
-
-  # create raster layers
-  efm_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-    ymn=lat_min, ymx=lat_max, vals=efm)
-
-  ef0_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-    ymn=lat_min, ymx=lat_max, vals=ef0)
-  
-  ef1_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-    ymn=lat_min, ymx=lat_max, vals=ef1)
-  
-  ef2_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-    ymn=lat_min, ymx=lat_max, vals=ef2)
-  
-  ef3_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-    ymn=lat_min, ymx=lat_max, vals=ef3)
-
-  ef4_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-    ymn=lat_min, ymx=lat_max, vals=ef4)
-
-  ef5_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-    ymn=lat_min, ymx=lat_max, vals=ef5)
-
-  # create raster brick
-  sum_brick <- raster::brick(efm_raster, ef0_raster, ef1_raster, ef2_raster, ef3_raster, ef4_raster, ef5_raster)
-
-  # save to csv file
-  peak_file <- paste(cwd, "/region/summary.csv", sep="")
-  write.csv(kk, peak_file, row.names=FALSE)
-
-  # save to file in Geotiff format
-  sum_brick_file <- paste(cwd, "/region/summary.tif", sep="")
-  rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-  raster::writeRaster(sum_brick, sum_brick_file, overwrite=TRUE)
-}
 
 ### PLOTTING FUNCTIONS ####################################
 
@@ -1917,14 +1919,14 @@ hurrecon_summarize_region <- function() {
 #' @param site_name name of site
 #' @param start_datetime optional start datetime (YYYY-MM-DD hh:mm)
 #' @param end_datetime optional end datetime (YYYY-MM-DD hh:mm)
-#' @param y_var y-axis variable
+#' @param var variable to plot
 #' @return no return value
 #' @export
 #' @examples
 #' @rdname plotting
 
 hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='', 
-  end_datetime='', y_var="wind_spd") {
+  end_datetime='', var="wind_speed") {
 
   # get current working directory
   cwd <- getwd()
@@ -1965,14 +1967,17 @@ hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='',
   x_var <- "dt"
   x_label <- paste("Datetime (UTC)", sep="")
 
-  if (y_var == "wind_spd") {
+  if (var == "wind_speed") {
+    y_var <- "wind_spd"
     y_label <- "Wind Speed (m/s)"
-  } else if (y_var == "gust_spd") {
+  } else if (var == "gust_speed") {
+    y_var <- "gust_spd"
     y_label <- "Gust Speed (m/s)"
-  } else if (y_var == "wind_dir") {
+  } else if (var == "wind_direction") {
+    y_var <- "wind_dir"
     y_label <- "Wind Direction (deg)"
   } else {
-    cat("\ny_var must be wind_spd, gust_spd, or wind_dir\n")
+    cat("\nvar must be wind_speed, gust_speed, or wind_direction\n")
     stop()
   }
 
@@ -2074,14 +2079,14 @@ hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='',
 #' @param site_name name of site
 #' @param start_datetime optional start datetime in format YYYY-MM-DD hh:mm
 #' @param end_datetime optional end datetime in format YYYY-MM-DD hh:mm
-#' @param y_var y-axis variable
+#' @param var variable to plot
 #' @param adjust whether to subtract 360 degrees from wind direction.
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_site_xy <- function(hur_id, site_name, start_datetime='', 
-  end_datetime='', y_var="wind_spd", adjust=FALSE) {
+  end_datetime='', var="wind_speed", adjust=FALSE) {
 
   # get current working directory
   cwd <- getwd()
@@ -2122,12 +2127,14 @@ hurrecon_plot_site_xy <- function(hur_id, site_name, start_datetime='',
   x_var <- "wind_dir"
   x_label <- "Wind Direction (deg)"
 
-  if (y_var == "wind_spd") {
+  if (var == "wind_speed") {
+    y_var <- "wind_spd"
     y_label <- "Wind Speed (m/s)"
-  } else if (y_var == "gust_spd") {
+  } else if (var == "gust_speed") {
+    y_var <- "gust_spd"
     y_label <- "Gust Speed (m/s)"
   } else {
-    cat("\ny_var must be wind_spd or gust_spd\n")
+    cat("\nvar must be wind_speed or gust_speed\n")
     stop()
   }
 
@@ -2236,13 +2243,13 @@ hurrecon_plot_site_xy <- function(hur_id, site_name, start_datetime='',
 #' @param site_name name of site
 #' @param start_year optional start year
 #' @param end_year optional end year
-#' @param y_var y-axis variable
+#' @param var variable to plot
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_site_all <- function(site_name, start_year='', end_year='', 
-  y_var="wind_spd") {
+  var="wind_speed") {
 
   # get current working directory
   cwd <- getwd()
@@ -2278,14 +2285,17 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
   x_var <- "year"
   x_label <- "Year"
 
-  if (y_var == "wind_spd") {
+   if (var == "wind_speed") {
+    y_var <- "wind_spd"
     y_label <- "Wind Speed (m/s)"
-  } else if (y_var == "gust_spd") {
+  } else if (var == "gust_speed") {
+    y_var <- "gust_spd"
     y_label <- "Gust Speed (m/s)"
-  } else if (y_var == "wind_dir") {
+  } else if (var == "wind_direction") {
+    y_var <- "wind_dir"
     y_label <- "Wind Direction (deg)"
   } else {
-    cat("\ny_var must be wind_spd, gust_spd, or wind_dir\n")
+    cat("\nvar must be wind_speed, gust_speed, or wind_direction\n")
     stop()
   }
 

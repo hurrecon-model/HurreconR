@@ -4,7 +4,6 @@
 \alias{hurrecon_summarize_land_water}
 \alias{hurrecon_summarize_tracks}
 \alias{hurrecon_summarize_site}
-\alias{hurrecon_summarize_region}
 \title{Summarizing Functions}
 \usage{
 hurrecon_summarize_land_water()
@@ -12,8 +11,6 @@ hurrecon_summarize_land_water()
 hurrecon_summarize_tracks()
 
 hurrecon_summarize_site(hur_id, site_name)
-
-hurrecon_summarize_region()
 }
 \arguments{
 \item{hur_id}{hurricane id}
@@ -21,8 +18,6 @@ hurrecon_summarize_region()
 \item{site_name}{name of site}
 }
 \value{
-no return value
-
 no return value
 
 no return value
@@ -38,11 +33,4 @@ hurrecon_summarize_tracks displays features of the current ids file
 
 hurrecon_summarize_site displays peak values for a given hurricane
 and site in the console.
-
-hurrecon_summarize_region compiles regional results for all hurricanes.
-Results are saved in a GeoTiff file (summary.tif) with 7 layers and in
-a CSV file of hurricane ids and maximum enhanced Fujita scale values
-(summary.csv) on the region subdirectory. This function should be run
-whenever new regional results are generated before using the plotting
-function hurrecon_plot_region_all.
 }

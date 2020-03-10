@@ -13,7 +13,7 @@ hurrecon_plot_site_ts(
   site_name,
   start_datetime = "",
   end_datetime = "",
-  y_var = "wind_spd"
+  var = "wind_speed"
 )
 
 hurrecon_plot_site_xy(
@@ -21,7 +21,7 @@ hurrecon_plot_site_xy(
   site_name,
   start_datetime = "",
   end_datetime = "",
-  y_var = "wind_spd",
+  var = "wind_speed",
   adjust = FALSE
 )
 
@@ -29,7 +29,7 @@ hurrecon_plot_site_all(
   site_name,
   start_year = "",
   end_year = "",
-  y_var = "wind_spd"
+  var = "wind_speed"
 )
 
 hurrecon_plot_region(hur_id, var = "fujita_scale")
@@ -45,15 +45,13 @@ hurrecon_plot_region_all(var = "efmax", tracks = FALSE)
 
 \item{end_datetime}{optional end datetime in format YYYY-MM-DD hh:mm}
 
-\item{y_var}{y-axis variable}
+\item{var}{variable to plot}
 
 \item{adjust}{whether to subtract 360 degrees from wind direction.}
 
 \item{start_year}{optional start year}
 
 \item{end_year}{optional end year}
-
-\item{var}{variable to plot}
 
 \item{tracks}{whether to also plot hurricane tracks}
 }

@@ -92,5 +92,7 @@ over a region for all hurricanes. If width is TRUE, the radius of maximum
 wind (rmw) and profile exponent (s_par) for the given hurricane are used, 
 if available. If time_step is NULL, the time step is calculated. If water 
 is FALSE, results are calculated for land areas only. Results for each 
-hurricane are saved in a GeoTiff file on the region subdirectory.
+hurricane are saved in a GeoTiff file on the region subdirectory. Summary
+results for all hurricanes (summary.tif, summary.csv) are also calculated 
+and saved to the region subdirectory.
 }
