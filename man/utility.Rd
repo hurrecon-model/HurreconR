@@ -53,11 +53,11 @@ no return value
 hurrecon_set_path sets the path for the current set of model runs.
 
 hurrecon_create_land_water creates a land-water raster file in GeoTiff 
-format from vector boundary files in shapefile format. The land-water file
+format from boundary files in shapefile format. The land-water file
 (land_water.tif) is assumed to be aligned with lines of latitude and 
-longitude.  Boundary files are assumed to be named boundary.* on the gis 
+longitude.  Boundary files are assumed to be named boundary.* on the vector 
 subdirectory. This function requires a reclasification file (reclassify.csv)
-with 3 columns (from, to, becomes) on the gis subdirectory. For more details,
+with 3 columns (from, to, becomes) on the vector subdirectory. For more details,
 see documentation for the R raster and reclassify functions. The land-water
 file is created on the input subdirectory.
 

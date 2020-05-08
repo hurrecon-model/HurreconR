@@ -71,7 +71,7 @@ If timing is TRUE, the total elasped time is displayed.
 hurrecon_model_site_all creates a table of peak values for all hurricanes
 for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
 profile exponent (s_par) for the given hurricane are used, if available. 
-If save is TRUE, results are saved to a CSV file on the site subdirectory; 
+If save is TRUE, results are saved to a CSV file on the site-all subdirectory; 
 otherwise results are returned as a data frame.  If timing is TRUE, the 
 total elasped time is displayed.
 
@@ -82,8 +82,9 @@ hurricane over a region. If width is TRUE, the radius of maximum wind (rmw)
 and profile exponent (s_par) for the given hurricane are used, if available.
 If time_step is NULL, the time step is calculated. If water is FALSE, results
 are calculated for land areas only. If save is TRUE, results are saved as a 
-GeoTiff file; otherwise results are returned as a raster brick with 6 layers.
-If timing is TRUE, the total elasped time is displayed.
+GeoTiff file on the region subdirectory; otherwise results are returned as
+a raster brick with 6 layers. If timing is TRUE, the total elasped time 
+is displayed.
 
 hurrecon_model_region_all calculates peak wind speed (meters/second), 
 enhanced Fujita scale, wind direction (degrees), cardinal wind direction, 
@@ -92,7 +93,7 @@ over a region for all hurricanes. If width is TRUE, the radius of maximum
 wind (rmw) and profile exponent (s_par) for the given hurricane are used, 
 if available. If time_step is NULL, the time step is calculated. If water 
 is FALSE, results are calculated for land areas only. Results for each 
-hurricane are saved in a GeoTiff file on the region subdirectory. Summary
-results for all hurricanes (summary.tif, summary.csv) are also calculated 
-and saved to the region subdirectory.
+hurricane are saved in a GeoTiff file on the region-all subdirectory. 
+Summary results for all hurricanes (summary.csv, summary.tif) are also 
+calculated and saved to the region-all subdirectory.
 }
