@@ -71,8 +71,12 @@ from HURDAT2 plus columns for standard datetime and Julian day with fraction.
 
 hurrecon_extract_tracks extracts hurricane ids and tracks from the two
 files created by hurrecon_reformat_hurdat2 (hurdat2_ids.csv and 
-hurdat2_tracks.csv). Selected hurricanes must have at least two positions
-in the geographic window set by the land-water file (and optionally extended
-by the margin parameter) and must have a maximum sustained wind speed
-in that window that equals or exceeds the value of wind_min.
+hurdat2_tracks.csv). The geographic window used to select hurricanes is 
+set by the land-water file and optionally extended by the margin parameter.
+Selection begins by identifying all positions in the window where the hurricane
+has "HU" (hurricane) status in HURDAT2.  If at least one such position exists,
+the track is extended to include one position before and one position after
+the window, if possible. If the resulting track contains at least two positions 
+and the maximum sustained wind speed equals or exceeds wind_min, the track 
+is included.
 }

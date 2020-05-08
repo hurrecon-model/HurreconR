@@ -19,7 +19,7 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# March 2020
+# May 2020
 
 # R version 3.6.3
 
@@ -87,7 +87,7 @@ get_fujita_colors <- function() {
   ef5_col <- "red"
   efx_col <- "grey"
 
-  return(c(ef0_col, ef1_col, ef2_col, ef3_col, ef4_col, ef5_col,efx_col))
+  return(c(ef0_col, ef1_col, ef2_col, ef3_col, ef4_col, ef5_col, efx_col))
 }
 
 #' format_time_difference_hms returns a time difference formatted as
@@ -145,7 +145,7 @@ check_file_exists <- function(file_name) {
 #' @return vector of latitude, longitude, and cover type
 #' @noRd
 
-read_site_file <-function(site_name) {
+read_site_file <- function(site_name) {
   cwd <- getwd()
   site_file <- paste(cwd, "/input/sites.csv", sep="")
   check_file_exists(site_file)
@@ -170,7 +170,7 @@ read_site_file <-function(site_name) {
 
 #' read_parameter_file reads a parameter file and returns a vector containing
 #' the radius of maximum wind (rmw) (kilometers) and profile exponent (s_par). 
-#' If width is TRUE, parameters are returned for the the specified hurricane, 
+#' If width is TRUE, parameters are returned for the specified hurricane, 
 #' if available; otherwise parameters for ALL are returned.
 #' @param hur_id hurricane id
 #' @param width whether to use width parameters for the specified hurricane
@@ -233,9 +233,9 @@ get_fixed_model_parameters <- function(cover_type) {
 }
 
 #' get_time_step calculates the time step (minutes) for regional modeling, 
-#' assuming a maximum hurricane speed of 20 meters per second (1200 meters 
-#' per minute). Values are rounded to the nearest 1, 2, 3, 5, 10, 15, 30, 
-#' or 60 minutes.
+#' assuming a maximum hurricane forward speed of 20 meters per second (1200 
+#' meters per minute). Values are rounded to the nearest 1, 2, 3, 5, 10, 15, 
+#' 30, or 60 minutes.
 #' @return time step
 #' @noRd
 
@@ -246,11 +246,11 @@ get_time_step <- function() {
   check_file_exists(land_water_file)
   land_water <- raster::raster(land_water_file)
 
-  # get cell height in meters
+  # get cell height in meters (at latitude 45 degrees)
   nrows <- dim(land_water)[1]
   lat_min <- raster::extent(land_water)[3]
   lat_max <- raster::extent(land_water)[4]
-  cell_y <- 111132 * (lat_max - lat_min)/nrows 
+  cell_y <- 111132 * (lat_max - lat_min)/nrows
 
   # calculate time step
   ts <- round(cell_y/1200)
@@ -314,10 +314,10 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
   tt_rows <- nrow(tt)
 
   # initialize vectors
-  jd_seq <- vector()
-  lat_seq <- vector()
-  lon_seq <- vector()
-  wmax_seq <- vector()
+  jd_vec <- vector()
+  lat_vec <- vector()
+  lon_vec <- vector()
+  wmax_vec <- vector()
 
   # interpolate values for each segment of track.file
   for (i in 1:(tt_rows-1)) {
@@ -334,20 +334,20 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
     lon <- lon[-length(lon)]
     wmax <- wmax[-length(wmax)]
 
-    jd_seq <- append(jd_seq, jd)
-    lat_seq <- append(lat_seq, lat)
-    lon_seq <- append(lon_seq, lon)
-    wmax_seq <- append(wmax_seq, wmax)
+    jd_vec <- append(jd_vec, jd)
+    lat_vec <- append(lat_vec, lat)
+    lon_vec <- append(lon_vec, lon)
+    wmax_vec <- append(wmax_vec, wmax)
   }
   
   # add final row
-  jd_seq <- append(jd_seq, tt$jd[tt_rows])
-  lat_seq <- append(lat_seq, tt$lat[tt_rows])
-  lon_seq <- append(lon_seq, tt$lon[tt_rows])
-  wmax_seq <- append(wmax_seq, tt$wind_max[tt_rows])
+  jd_vec <- append(jd_vec, tt$jd[tt_rows])
+  lat_vec <- append(lat_vec, tt$lat[tt_rows])
+  lon_vec <- append(lon_vec, tt$lon[tt_rows])
+  wmax_vec <- append(wmax_vec, tt$wind_max[tt_rows])
 
   # create data frame for modeled data
-  all_rows = length(jd_seq)
+  all_rows = length(jd_vec)
 
   mm <- data.frame(date_time=character(all_rows), year=integer(all_rows), 
     jd=numeric(all_rows), latitude=numeric(all_rows), longitude=numeric(all_rows), 
@@ -358,10 +358,10 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
 
   mm$year <- substr(tt$date_time[1], 1, 4)
 
-  mm$jd<- jd_seq
-  mm$latitude<- lat_seq
-  mm$longitude<- lon_seq
-  mm$wind_max<- wmax_seq
+  mm$jd<- jd_vec
+  mm$latitude<- lat_vec
+  mm$longitude<- lon_vec
+  mm$wind_max<- wmax_vec
 
   return(mm)
 }
@@ -377,7 +377,7 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
 #' @noRd
 
 calculate_range_bearing <- function(lat1, lon1, lat2, lon2) {
-  R <- 6371 # radius of earth in kilometers
+  R <- 6367 # radius of earth in kilometers (at latitude 45 degrees)
 
   d2r <- 0.017453292519943295  # pi / 180
   r2d <- 57.29577951308232  # 180 / pi
@@ -435,8 +435,8 @@ calculate_range_bearing <- function(lat1, lon1, lat2, lon2) {
 }
 
 #' interpolate_hurricane_speed_bearing performs a linear interpolation of hurricane
-#' speed (meters/second) and bearing (degrees) along a hurricane track based on
-#' mid-segment values.
+#' forward speed (meters/second) and bearing (degrees) along a hurricane track based
+#' on mid-segment values.
 #' @param tt data frame of track values
 #' @param mm data frame of modeled values
 #' @return data frame of modeled values
@@ -465,8 +465,8 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
   vv_rows <- nrow(vv)
   
   # initialize vectors
-  bear_seq <- vector()
-  spd_seq <- vector()
+  bear_vec <- vector()
+  spd_vec <- vector()
 
   # interpolate hurricane speed & bearing for each segment
   for (i in 1:(vv_rows+1)) {
@@ -478,8 +478,8 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
       bear <- rep(vv$hur_bear[1], new_rows)
       spd <- rep(vv$hur_spd[1], new_rows)
       
-      bear_seq <- append(bear_seq, bear)
-      spd_seq <- append(spd_seq, spd)
+      bear_vec <- append(bear_vec, bear)
+      spd_vec <- append(spd_vec, spd)
 
     # interpolate between mid-points
     } else if (i <= vv_rows) {
@@ -501,8 +501,8 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
       # speed
       spd <- seq(from=vv$hur_spd[i-1], to=vv$hur_spd[i], length.out=new_rows)
  
-      bear_seq <- append(bear_seq, bear)
-      spd_seq <- append(spd_seq, spd)
+      bear_vec <- append(bear_vec, bear)
+      spd_vec <- append(spd_vec, spd)
 
     # after mid-point of last segment
     } else {
@@ -512,20 +512,20 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
       bear <- rep(vv$hur_bear[vv_rows], new_rows)
       spd <- rep(vv$hur_spd[vv_rows], new_rows)
 
-      bear_seq <- append(bear_seq, bear)
-      spd_seq <- append(spd_seq, spd)
+      bear_vec <- append(bear_vec, bear)
+      spd_vec <- append(spd_vec, spd)
     }
   }  
 
   # adjust bearing as needed
-  for (i in 1:length(bear_seq)) {
-    if (bear_seq[i] < 0) bear_seq[i] <- bear_seq[i] + 360
-    if (bear_seq[i] > 360) bear_seq[i] <- bear_seq[i] - 360
+  for (i in 1:length(bear_vec)) {
+    if (bear_vec[i] < 0) bear_vec[i] <- bear_vec[i] + 360
+    if (bear_vec[i] > 360) bear_vec[i] <- bear_vec[i] - 360
   }
 
   # add to modeled data frame
-  mm$hur_bear <- bear_seq
-  mm$hur_spd <- spd_seq
+  mm$hur_bear <- bear_vec
+  mm$hur_spd <- spd_vec
 
   return(mm)
 }
@@ -545,8 +545,8 @@ calculate_site_range_bearing <- function(mm, site_latitude, site_longitude) {
     site_range_bear <- calculate_range_bearing(site_latitude, site_longitude, 
       mm$latitude[i], mm$longitude[i])
     
-    mm$site_bear[i] <- site_range_bear[2]
-    mm$site_range[i] <- site_range_bear[1]
+      mm$site_range[i] <- site_range_bear[1]
+      mm$site_bear[i] <- site_range_bear[2]
   }
   
   return(mm)
@@ -801,8 +801,9 @@ get_peak_values <- function(hur_id, site_name, mm) {
 #' get_regional_peak_wind calculates the peak wind speed (meters/second), enhanced 
 #' Fujita scale, wind direction (degrees), cardinal wind direction, gale wind duration 
 #' (minutes), and hurricane wind duration (minutes) for a given hurricane over a region.
+#' Results are returned in a raster brick with 6 layers.
 #' @param hur_id hurricane id
-#' @param mm a data frame of modeled values
+#' @param mm data frame of modeled values
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to calculate values over water
@@ -1371,10 +1372,14 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL) {
 #' @description
 #' hurrecon_extract_tracks extracts hurricane ids and tracks from the two
 #' files created by hurrecon_reformat_hurdat2 (hurdat2_ids.csv and 
-#' hurdat2_tracks.csv). Selected hurricanes must have at least two positions
-#' in the geographic window set by the land-water file (and optionally extended
-#' by the margin parameter) and must have a maximum sustained wind speed
-#' in that window that equals or exceeds the value of wind_min.
+#' hurdat2_tracks.csv). The geographic window used to select hurricanes is 
+#' set by the land-water file and optionally extended by the margin parameter.
+#' Selection begins by identifying all positions in the window where the hurricane
+#' has "HU" (hurricane) status in HURDAT2.  If at least one such position exists,
+#' the track is extended to include one position before and one position after
+#' the window, if possible. If the resulting track contains at least two positions 
+#' and the maximum sustained wind speed equals or exceeds wind_min, the track 
+#' is included.
 #' @param margin an optional extension of the geographic window set by the
 #' land-water file (degrees)
 #' @param wind_min the minimum value of maximum sustained wind speed 
@@ -1678,8 +1683,8 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
 #' and profile exponent (s_par) for the given hurricane are used, if available.
 #' If time_step is NULL, the time step is calculated. If water is FALSE, results
 #' are calculated for land areas only. If save is TRUE, results are saved as a 
-#' GeoTiff file; otherwise results are returned as a raster brick. If timing is
-#' TRUE, the total elasped time is displayed.
+#' GeoTiff file; otherwise results are returned as a raster brick with 6 layers.
+#' If timing is TRUE, the total elasped time is displayed.
 #' @param hur_id hurricane id
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
@@ -1915,6 +1920,7 @@ hurrecon_summarize_site <- function(hur_id, site_name) {
 #' hurrecon_plot_site_ts creates a time-series plot of wind speed, gust 
 #' speed, or wind direction as a function of datetime for a given 
 #' hurricane and site. Optional start and end datetimes may be specified.
+#' Variables to plot: wind_speed, gust_speed, or wind_direction.
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param start_datetime optional start datetime (YYYY-MM-DD hh:mm)
@@ -2074,7 +2080,8 @@ hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='',
 #' hurrecon_plot_site_xy creates a scatter plot of wind speed or gust speed
 #' as a function of wind direction for a given hurricane and site. If adjust 
 #' is TRUE, 360 degrees are substracted from wind direction values greater 
-#' than 180. Optional start and end datetimes may be specified.
+#' than 180. Optional start and end datetimes may be specified. Variables to
+#' plot: wind_speed or gust_speed.
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param start_datetime optional start datetime in format YYYY-MM-DD hh:mm
@@ -2239,7 +2246,8 @@ hurrecon_plot_site_xy <- function(hur_id, site_name, start_datetime='',
 #' @description
 #' hurrecon_plot_site_all creates a time-series plot of peak values 
 #' for all hurricanes for a given site. Optional start and end years
-#' may be specified.
+#' may be specified. Variables to plot: wind_speed, gust_speed, or
+#' wind_direction.
 #' @param site_name name of site
 #' @param start_year optional start year
 #' @param end_year optional end year
@@ -2285,7 +2293,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
   x_var <- "year"
   x_label <- "Year"
 
-   if (var == "wind_speed") {
+  if (var == "wind_speed") {
     y_var <- "wind_spd"
     y_label <- "Wind Speed (m/s)"
   } else if (var == "gust_speed") {
@@ -2389,7 +2397,9 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 #' @description
 #' hurrecon_plot_region creates regional plots of enhanced Fujita scale, 
 #' peak wind speed, wind direction, cardinal wind direction, gale wind 
-#' duration, and hurricane wind duration for a given hurricane.
+#' duration, and hurricane wind duration for a given hurricane. Variables
+#' to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
+#' gale_duration, or hurricane_duration.
 #' @param hur_id hurricane id
 #' @param var variable to plot
 #' @return no return value
@@ -2464,39 +2474,47 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
   par(mar=c(5.1, 4.6, 4.1, 2.1))
   
   if (var == "fujita_scale") {
-    main_label <- paste(hur_id, "Fujita Scale")
-    arg <- list(at=ff_vals, labels=ff_labs)
-    raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=ff_cols)
-    raster::plot(boundaries, add=TRUE)
-    lines(tt$longitude, tt$latitude)
+    if (raster::maxValue(ff_layer) > 0) {
+      main_label <- paste(hur_id, "Fujita Scale")
+      arg <- list(at=ff_vals, labels=ff_labs)
+      raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=ff_cols)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else cat("\nNo Fujita values\n")   
 
   } else if (var == "wind_speed") {
-    main_label <- paste(hur_id, "Wind Speed (m/s)")
-    raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label)
-    raster::plot(boundaries, add=TRUE)
-    lines(tt$longitude, tt$latitude)
+    if (raster::maxValue(ss_layer) > 0) {
+      main_label <- paste(hur_id, "Wind Speed (m/s)")
+      raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else cat("\nNo wind speed\n")   
 
   } else if (var == "wind_direction") {
-    main_label <- paste(hur_id, "Wind Direction (deg)")
-    raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label)
-    raster::plot(boundaries, add=TRUE)
-    lines(tt$longitude, tt$latitude)
+    if (raster::maxValue(dd_layer) > 0) {
+      main_label <- paste(hur_id, "Wind Direction (deg)")
+      raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else cat("\nNo wind direction\n")   
     
   } else if (var == "wind_compass") {
-    main_label <- paste(hur_id, "Wind Direction")
-    arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
-    cols=rainbow(9)
-    cols[1] <- "white"
-    raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
-    raster::plot(boundaries, add=TRUE)
-    lines(tt$longitude, tt$latitude)
+    if (raster::maxValue(cc_layer) > 0) {
+      main_label <- paste(hur_id, "Wind Direction")
+      arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
+      cols=rainbow(9)
+      cols[1] <- "white"
+      raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else cat("\nNo wind compass\n")   
 
   } else if (var == "gale_duration") {
     if (raster::maxValue(gg_layer) > 0) {
       main_label <- paste(hur_id, "Gale Winds (min)")
       raster::plot(gg_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude)
+      lines(tt$longitude, tt$latitude, col="grey")
     } else cat("\nNo gale winds\n")   
 
   } else if (var == "hurricane_duration") {
@@ -2504,7 +2522,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       main_label <- paste(hur_id, "Hurricane Winds (min)")
       raster::plot(hh_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude)
+      lines(tt$longitude, tt$latitude, col="grey")
     } else cat("\nNo hurricane winds\n")   
 
   } else {
@@ -2516,6 +2534,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
 #' @description
 #' hurrecon_plot_region_all creates regional plots of maximum enhanced Fujita
 #' value and number of storms for each enhanced Fujita value for all hurricanes.
+#' Variables to plot: efmax, ef0, ef1, ef2, ef3, ef4, or ef5.
 #' @param var variable to plot
 #' @param tracks whether to also plot hurricane tracks
 #' @return no return value

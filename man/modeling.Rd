@@ -82,8 +82,8 @@ hurricane over a region. If width is TRUE, the radius of maximum wind (rmw)
 and profile exponent (s_par) for the given hurricane are used, if available.
 If time_step is NULL, the time step is calculated. If water is FALSE, results
 are calculated for land areas only. If save is TRUE, results are saved as a 
-GeoTiff file; otherwise results are returned as a raster brick. If timing is
-TRUE, the total elasped time is displayed.
+GeoTiff file; otherwise results are returned as a raster brick with 6 layers.
+If timing is TRUE, the total elasped time is displayed.
 
 hurrecon_model_region_all calculates peak wind speed (meters/second), 
 enhanced Fujita scale, wind direction (degrees), cardinal wind direction, 
