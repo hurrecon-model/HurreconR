@@ -246,7 +246,7 @@ get_time_step <- function() {
   check_file_exists(land_water_file)
   land_water <- raster::raster(land_water_file)
 
-  # get cell height in meters (at latitude 45 degrees)
+  # get cell height in meters (at latitude  45 degrees)
   nrows <- dim(land_water)[1]
   lat_min <- raster::extent(land_water)[3]
   lat_max <- raster::extent(land_water)[4]
@@ -366,26 +366,45 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
   return(mm)
 }
 
-#' calculate_range_bearing returns a vector containing the range (kilometers)
-#' and bearing (degrees) from one point to another using the latitude & longitude
+#' estimate_range uses the Pythagorean equation to estimate the range 
+#' (kilometers) from one point to another based on the latitude & longitude 
+#' of each point. Note: overestimates range unless on same meridian.
+#' @param lat1 latitude of first point
+#' @param lon1 longitude of first point
+#' @param lat2 latitude of second point
+#' @param lon2 longitude of second point
+#' @return range
+#' @noRd
+
+estimate_range <- function(lat1, lon1, lat2, lon2) {
+  R <- 6367 # radius of earth in kilometers (at latitude 45 degrees)
+  d2r <- 0.017453292519943295  # pi / 180
+
+  lat_avg <- d2r*(lat1 + lat2)/2
+  x <- d2r*(lon1 - lon2)*cos(d2r*lat_avg)
+  y <- d2r*(lat1 - lat2)
+  range_est <- R * sqrt(x^2 + y^2)
+
+  return(range_est)
+}
+
+#' calculate_range uses the Haversine formula to calculate the range 
+#' (kilometers) from one point to another based on the latitude & longitude
 #' of each point.
 #' @param lat1 latitude of first point
 #' @param lon1 longitude of first point
 #' @param lat2 latitude of second point
 #' @param lon2 longitude of second point
-#' @return a vector containing range & bearing
+#' @return range in kilometers
 #' @noRd
 
-calculate_range_bearing <- function(lat1, lon1, lat2, lon2) {
+calculate_range <- function(lat1, lon1, lat2, lon2) {
   R <- 6367 # radius of earth in kilometers (at latitude 45 degrees)
-
   d2r <- 0.017453292519943295  # pi / 180
-  r2d <- 57.29577951308232  # 180 / pi
 
   # nearly same point
   if (abs(lat2 - lat1) < 0.000001 && abs(lon2 - lon1) < 0.000001) {
     rang <- 0
-    bear <- 0
     
   } else {
     # date line
@@ -398,12 +417,37 @@ calculate_range_bearing <- function(lat1, lon1, lat2, lon2) {
     rlon1 <- d2r*lon1
     rlon2 <- d2r*lon2
 
-    cos_rlat1 <- cos(rlat1)
-    cos_rlat2 <- cos(rlat2)
-
-    A <- (sin((rlat2-rlat1)/2))^2 + cos_rlat1*cos_rlat2*(sin((rlon2-rlon1)/2))^2
+    A <- (sin((rlat2-rlat1)/2))^2 + cos(rlat1)*cos(rlat2)*(sin((rlon2-rlon1)/2))^2
     C <- 2 * atan2(sqrt(A), sqrt(1-A))
     rang <- R * C
+  }
+
+  return(rang)
+}
+
+#' calculate_bearing uses the Haversine formula to calculate the bearing 
+#' (degrees) from one point to another based on the latitude & longitude 
+#' of each point.
+#' @param lat1 latitude of first point
+#' @param lon1 longitude of first point
+#' @param lat2 latitude of second point
+#' @param lon2 longitude of second point
+#' @return bearing in degrees
+#' @noRd
+
+calculate_bearing <- function(lat1, lon1, lat2, lon2) {
+  R <- 6367 # radius of earth in kilometers (at latitude 45 degrees)
+  d2r <- 0.017453292519943295  # pi / 180
+  r2d <- 57.29577951308232  # 180 / pi
+
+  # nearly same point
+  if (abs(lat2 - lat1) < 0.000001 && abs(lon2 - lon1) < 0.000001) {
+    bear <- 0
+    
+  } else {
+    # date line
+    if (lon1 > 90 && lon2 < -90) lon2 <- lon2 + 360
+    if (lon1 < -90 && lon2 > 90) lon1 <- lon1 + 360
 
     # same longitude
     if (lon1 == lon2) {
@@ -415,8 +459,13 @@ calculate_range_bearing <- function(lat1, lon1, lat2, lon2) {
     
     # different longitude
     } else {
+      # convert degrees to radians
+      rlat1 <- d2r*lat1
+      rlat2 <- d2r*lat2
+      rlon1 <- d2r*lon1
+      rlon2 <- d2r*lon2
 
-      B2 <- atan2(sin(rlon2-rlon1)*cos_rlat2, cos_rlat1*sin(rlat2) - sin(rlat1)*cos_rlat2*cos(rlon2-rlon1))
+      B2 <- atan2(sin(rlon2-rlon1)*cos(rlat2), cos(rlat1)*sin(rlat2) - sin(rlat1)*cos(rlat2)*cos(rlon2-rlon1))
       
       # convert radians to degrees
       B <- r2d*B2
@@ -431,7 +480,51 @@ calculate_range_bearing <- function(lat1, lon1, lat2, lon2) {
     }
   }
 
-  return(c(rang, bear))
+  return(bear)
+}
+
+#' get_maximum_wind_speed returns the maximum sustained wind speed for
+#' the specified hurricane.
+#' @param hur_id hurricane id
+#' @return maximum sustained wind speed (meters/second)
+#' @noRd
+
+get_maximum_wind_speed <- function(hur_id) {
+  # read hurricane track file
+  cwd <- getwd()
+  track_file <- paste(cwd, "/input/tracks.csv", sep="")
+  check_file_exists(track_file)
+  zz <-read.csv(track_file, header=TRUE, stringsAsFactors=FALSE)
+  names(zz)[1] <- "hur_id"
+
+  # subset by hurricane name
+  tt <- zz[(zz$hur_id == hur_id), ]
+
+  # get maximum wind speed
+  wmax <- max(tt$wind_max)
+
+  return(wmax)
+}
+
+#' get_maximum_range estimates the range (kilometers) at which sustained wind
+#' speeds are less than gale (17.5 meters/second).
+#' @param wmax maximum sustained wind speed (meters/second)
+#' @param rmw radius of maximum winds (kilometers)
+#' @param s_par profile constant
+#' @return range in kilometers
+#' @noRd
+
+get_maximum_range <- function(wmax, rmw, s_par) {
+  rang <- rmw
+  wspd <- 100
+
+  while (wspd > 17.5) {
+    rang <- rang + 10
+    x <- (rmw/rang)^s_par
+    wspd <- wmax * sqrt(x * exp(1-x))
+  }
+
+  return(rang)
 }
 
 #' interpolate_hurricane_speed_bearing performs a linear interpolation of hurricane
@@ -452,14 +545,17 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
 
   # calculate mid-segment hurricane speed & bearing
   for (i in (1:(tt_rows-1))) {
-    hur_range_bear <- calculate_range_bearing(tt$latitude[i], tt$longitude[i],
+    hur_range <- calculate_range(tt$latitude[i], tt$longitude[i],
       tt$latitude[i+1], tt$longitude[i+1])
   
+    hur_bear <- calculate_bearing(tt$latitude[i], tt$longitude[i],
+      tt$latitude[i+1], tt$longitude[i+1])
+    
     interval_sec <- (tt$jd[i+1] - tt$jd[i]) * 1440 * 60
     
     vv$jd[i] <- tt$jd[i] + (tt$jd[i+1] - tt$jd[i])/2
-    vv$hur_spd[i] <- (1000*hur_range_bear[1])/interval_sec
-    vv$hur_bear[i] <- hur_range_bear[2]
+    vv$hur_spd[i] <- (1000*hur_range)/interval_sec
+    vv$hur_bear[i] <- hur_bear
   }
   
   vv_rows <- nrow(vv)
@@ -542,11 +638,11 @@ calculate_site_range_bearing <- function(mm, site_latitude, site_longitude) {
   mm_rows <- nrow(mm)
   
   for (i in 1:mm_rows) {
-    site_range_bear <- calculate_range_bearing(site_latitude, site_longitude, 
+    mm$site_range[i] <- calculate_range(site_latitude, site_longitude, 
       mm$latitude[i], mm$longitude[i])
     
-      mm$site_range[i] <- site_range_bear[1]
-      mm$site_bear[i] <- site_range_bear[2]
+    mm$site_bear[i] <- calculate_bearing(site_latitude, site_longitude, 
+      mm$latitude[i], mm$longitude[i])
   }
   
   return(mm)
@@ -853,6 +949,12 @@ get_regional_peak_wind <- function(hur_id, mm, width, time_step, water, timing) 
   friction <- c(get_fixed_model_parameters(1)[3], get_fixed_model_parameters(2)[3])
   gust <- c(get_fixed_model_parameters(1)[4], get_fixed_model_parameters(2)[4])
 
+  # get maximum wind speed over track
+  wmax <- get_maximum_wind_speed(hur_id)
+  
+  # get maximum range for gale winds
+  range_maximum <- get_maximum_range(wmax, rmw, s_par)
+
   # record total elasped time if timing is TRUE
   if (timing == TRUE) start_time <- Sys.time()
 
@@ -874,37 +976,44 @@ get_regional_peak_wind <- function(hur_id, mm, width, time_step, water, timing) 
         gust_factor <- gust[cover_type]
 
         for (k in 1:nrow(mm)) {
-          # range & bearing from site to hurricane center
-          site_range_bear <- calculate_range_bearing(site_latitude, site_longitude,
-            mm$latitude[k], mm$longitude[k])
+          hur_latitude  <- mm$latitude[k]
+          hur_longitude <- mm$longitude[k]
+  
+          # site range
+          site_range <- calculate_range(site_latitude, site_longitude, 
+            hur_latitude, hur_longitude)
 
-          site_range <- site_range_bear[1]
-          site_bear <- site_range_bear[2]
+          # skip if too far away
+          if (site_range < range_maximum) {
+            # site bearing
+            site_bear <- calculate_bearing(site_latitude, site_longitude,
+              hur_latitude, hur_longitude)
 
-          # wind speed (m/s)
-          wspd <- calculate_wind_speed(site_bear, site_range, mm$latitude[k], 
-            mm$hur_bear[k], mm$hur_spd[k], mm$wind_max[k], rmw, s_par, asymmetry_factor, 
-            friction_factor)
+            # wind speed (m/s)
+            wspd <- calculate_wind_speed(site_bear, site_range, hur_latitude, 
+              mm$hur_bear[k], mm$hur_spd[k], mm$wind_max[k], rmw, s_par, asymmetry_factor, 
+              friction_factor)
 
-          # update values if gale or higher
-          if (wspd >= 17.5) {
-            # update duration of gale force winds (minutes)
-            gg[(nrows-i+1), j] <- gg[(nrows-i+1), j] + time_step
+            # update values if gale or higher
+            if (wspd >= 17.5) {
+              # update duration of gale force winds (minutes)
+              gg[(nrows-i+1), j] <- gg[(nrows-i+1), j] + time_step
  
-            # update duration of hurricane winds (minutes)
-            if (wspd >= 33) {
-              hh[(nrows-i+1), j] <- hh[(nrows-i+1), j] + time_step
-            }
+              # update duration of hurricane winds (minutes)
+              if (wspd >= 33) {
+                hh[(nrows-i+1), j] <- hh[(nrows-i+1), j] + time_step
+              }
 
-            # update peak values
-            if (xx[(nrows-i+1), j] < wspd) {
-              xx[(nrows-i+1), j] <- wspd
+              # update peak values
+              if (xx[(nrows-i+1), j] < wspd) {
+                xx[(nrows-i+1), j] <- wspd
 
-              ss[(nrows-i+1), j] <- as.integer(round(wspd))
+                ss[(nrows-i+1), j] <- as.integer(round(wspd))
 
-              # wind direction (degrees)
-              wdir <- calculate_wind_direction(mm$latitude[k], site_bear, inflow_angle)
-              dd[(nrows-i+1), j] <- as.integer(round(wdir))
+                # wind direction (degrees)
+                wdir <- calculate_wind_direction(mm$latitude[k], site_bear, inflow_angle)
+                dd[(nrows-i+1), j] <- as.integer(round(wdir))
+              }
             }
           }
         }
