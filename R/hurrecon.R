@@ -21,7 +21,7 @@
 # Emery R. Boose
 # May 2020
 
-# R version 3.6.3
+# R version 4.0.0
 
 # Required packages:
 #  raster
