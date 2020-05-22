@@ -307,7 +307,7 @@ read_hurricane_track_file <- function(hur_id) {
 #' specified time step.
 #' @param tt data frame of track data
 #' @param time_step time step (minutes)
-#' @return a data frame of interpolated data
+#' @return vectors of year, Julian day, latitude, longitude, max wind speed
 #' @noRd
 
 interpolate_hurricane_location_max_wind <- function(tt, time_step) {
@@ -346,24 +346,10 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
   lon_vec <- append(lon_vec, tt$lon[tt_rows])
   wmax_vec <- append(wmax_vec, tt$wind_max[tt_rows])
 
-  # create data frame for modeled data
-  all_rows = length(jd_vec)
+  year <- as.numeric(substr(tt$date_time[1], 1, 4))
+  yr_vec <- rep(year, times = length(jd_vec))
 
-  mm <- data.frame(date_time=character(all_rows), year=integer(all_rows), 
-    jd=numeric(all_rows), latitude=numeric(all_rows), longitude=numeric(all_rows), 
-    wind_max=numeric(all_rows), hur_bear=numeric(all_rows), hur_spd=numeric(all_rows), 
-    site_bear=numeric(all_rows), site_range=numeric(all_rows), rmw=numeric(all_rows), 
-    s_par=numeric(all_rows), wind_dir=numeric(all_rows), wind_spd=numeric(all_rows), 
-    gust_spd=numeric(all_rows), ef_sca=numeric(all_rows), stringsAsFactors=FALSE)
-
-  mm$year <- substr(tt$date_time[1], 1, 4)
-
-  mm$jd<- jd_vec
-  mm$latitude<- lat_vec
-  mm$longitude<- lon_vec
-  mm$wind_max<- wmax_vec
-
-  return(mm)
+  return(list(yr_vec, jd_vec, lat_vec, lon_vec, wmax_vec))
 }
 
 #' estimate_range uses the Pythagorean equation to estimate the range 
@@ -531,17 +517,19 @@ get_maximum_range <- function(wmax, rmw, s_par) {
 #' forward speed (meters/second) and bearing (degrees) along a hurricane track based
 #' on mid-segment values.
 #' @param tt data frame of track values
-#' @param mm data frame of modeled values
-#' @return data frame of modeled values
+#' @param jd_vec vector of Julian day values
+#' @return vectors of hurricane speed & bearing
 #' @noRd
 
-interpolate_hurricane_speed_bearing <- function(tt, mm) {
+interpolate_hurricane_speed_bearing <- function(tt, jd_vec) {
   tt_rows <- nrow(tt)
-  mm_rows <- nrow(mm)
+  vv_rows <- tt_rows - 1
+  mm_rows <- length(jd_vec)
 
-  # create data frame for mid-segment values
-  vv <- data.frame(jd=numeric(tt_rows-1), hur_bear=numeric(tt_rows-1), 
-    hur_spd=numeric(tt_rows-1), stringsAsFactors=FALSE)
+  # intialize vectors
+  vv_jd <- rep(0, vv_rows)
+  vv_spd <- rep(0, vv_rows)
+  vv_bear <- rep(0, vv_rows)
 
   # calculate mid-segment hurricane speed & bearing
   for (i in (1:(tt_rows-1))) {
@@ -553,38 +541,32 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
     
     interval_sec <- (tt$jd[i+1] - tt$jd[i]) * 1440 * 60
     
-    vv$jd[i] <- tt$jd[i] + (tt$jd[i+1] - tt$jd[i])/2
-    vv$hur_spd[i] <- (1000*hur_range)/interval_sec
-    vv$hur_bear[i] <- hur_bear
+    vv_jd[i] <- tt$jd[i] + (tt$jd[i+1] - tt$jd[i])/2
+    vv_spd[i] <- (1000*hur_range)/interval_sec
+    vv_bear[i] <- hur_bear
   }
   
-  vv_rows <- nrow(vv)
-  
   # initialize vectors
-  bear_vec <- vector()
-  spd_vec <- vector()
+  bear_vec <- rep(0, mm_rows)
+  spd_vec <- rep(0, mm_rows)
 
   # interpolate hurricane speed & bearing for each segment
   for (i in 1:(vv_rows+1)) {
     # before mid-point of 1st segment
     if (i == 1) {
-      index <- which(mm$jd <= vv$jd[1])
-      new_rows <- length(index)
+      index <- which(jd_vec <= vv_jd[1])
+     
+      bear_vec[index] <- vv_bear[1]
+      spd_vec[index] <- vv_spd[1]
       
-      bear <- rep(vv$hur_bear[1], new_rows)
-      spd <- rep(vv$hur_spd[1], new_rows)
-      
-      bear_vec <- append(bear_vec, bear)
-      spd_vec <- append(spd_vec, spd)
-
     # interpolate between mid-points
     } else if (i <= vv_rows) {
-      index <- which((mm$jd > vv$jd[i-1]) & (mm$jd <= vv$jd[i]))
+      index <- which((jd_vec > vv_jd[i-1]) & (jd_vec <= vv_jd[i]))
       new_rows <- length(index)
 
       # bearing
-      b1 <- vv$hur_bear[i-1]
-      b2 <- vv$hur_bear[i]
+      b1 <- vv_bear[i-1]
+      b2 <- vv_bear[i]
 
       if (b2 - b1 > 180) {
         b1 <- b1 + 360
@@ -595,21 +577,19 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
       bear <- seq(from=b1, to=b2, length.out=new_rows)        
 
       # speed
-      spd <- seq(from=vv$hur_spd[i-1], to=vv$hur_spd[i], length.out=new_rows)
+      spd <- seq(from=vv_spd[i-1], to=vv_spd[i], length.out=new_rows)
  
-      bear_vec <- append(bear_vec, bear)
-      spd_vec <- append(spd_vec, spd)
+      for (j in 1:new_rows) {
+        bear_vec[index[j]] <- bear[j]
+        spd_vec[index[j]]  <- spd[j]
+      }
 
     # after mid-point of last segment
     } else {
-      index <- which(mm$jd > vv$jd[vv_rows])
-      new_rows = length(index)
+      index <- which(jd_vec > vv_jd[vv_rows])
 
-      bear <- rep(vv$hur_bear[vv_rows], new_rows)
-      spd <- rep(vv$hur_spd[vv_rows], new_rows)
-
-      bear_vec <- append(bear_vec, bear)
-      spd_vec <- append(spd_vec, spd)
+      bear_vec[index] <- vv_bear[vv_rows]
+      spd_vec[index] <- vv_spd[vv_rows]
     }
   }  
 
@@ -619,33 +599,34 @@ interpolate_hurricane_speed_bearing <- function(tt, mm) {
     if (bear_vec[i] > 360) bear_vec[i] <- bear_vec[i] - 360
   }
 
-  # add to modeled data frame
-  mm$hur_bear <- bear_vec
-  mm$hur_spd <- spd_vec
-
-  return(mm)
+  return(list(spd_vec, bear_vec))
 }
 
 #' calculate_site_range_bearing calculates the range (kilometers) and bearing
 #' (degrees) from a site to the hurricane center.
-#' @param mm data frame of modeled values
-#' @param site_latitude latitude of site
-#' @param site_longitude longitude of site
+#' @param lat_vec vector of hurricane latitudes (degrees)
+#' @param lon_vec vector of hurricane longitudes (degrees)
+#' @param site_latitude latitude of site (degrees)
+#' @param site_longitude longitude of site (degrees)
 #' @return data frame of modeled values
 #' @noRd
 
-calculate_site_range_bearing <- function(mm, site_latitude, site_longitude) {
-  mm_rows <- nrow(mm)
+calculate_site_range_bearing <- function(lat_vec, lon_vec, site_latitude, site_longitude) {
+  mm_rows <- length(lat_vec)
+
+  # initialize vectors
+  srange <- rep(0, mm_rows)
+  sbear  <- rep(0, mm_rows)
   
   for (i in 1:mm_rows) {
-    mm$site_range[i] <- calculate_range(site_latitude, site_longitude, 
-      mm$latitude[i], mm$longitude[i])
+    srange[i] <- calculate_range(site_latitude, site_longitude, 
+      lat_vec[i], lon_vec[i])
     
-    mm$site_bear[i] <- calculate_bearing(site_latitude, site_longitude, 
-      mm$latitude[i], mm$longitude[i])
+    sbear[i] <- calculate_bearing(site_latitude, site_longitude, 
+      lat_vec[i], lon_vec[i])
   }
   
-  return(mm)
+  return(list(srange, sbear))
 }
 
 #' calculate_wind_direction calculates the wind direction (degrees) at the
@@ -771,125 +752,128 @@ calculate_enhanced_fujita_scale <- function (gust_spd) {
 
 #' calculate_wind_speed_direction calculates the wind speed, gust speed, wind
 #' direction, and enhanced Fujita scale wind damage at a site.
-#' @param mm data frame of modeled values
+#' @param sbear_vec vector of site bearings (degrees)
+#' @param srange_vec vector of site ranges (kilometers)
+#' @param lat_vec vector of hurricane latitudes (degrees)
+#' @param bear_vec vector of hurricane bearings (degrees)
+#' @param spd_vec vector of hurricane forward speeds (meters/second)
+#' @param wmax_vec vector of maximum sustained wind speeds (meters/second)
 #' @param inflow_angle cross-isobar inflow angle (degrees)
-#' @param cover_type cover type (1=water, 2=land)
 #' @param rmw radius of maximum winds (kilometers)
 #' @param s_par profile exponent
 #' @param asymmetry_factor asymmetry factor
 #' @param friction_factor friction factor
 #' @param gust_factor gust factor
-#' @return data frame of modeled values
+#' @return vectors of wind speed, gust speed, wind direction, enhanced Fujita value
 #' @noRd
 
-calculate_wind_speed_direction <- function(mm, inflow_angle, cover_type, rmw, 
-  s_par, asymmetry_factor, friction_factor, gust_factor) {
+calculate_wind_speed_direction <- function(sbear_vec, srange_vec, lat_vec, 
+  bear_vec, spd_vec, wmax_vec, inflow_angle, rmw, s_par, asymmetry_factor, 
+  friction_factor, gust_factor) {
  
-  mm_rows <- nrow(mm)
+  mm_rows <- length(sbear_vec)
+
+  # initialize vectors
+  wspd_vec <- rep(0, mm_rows)
+  gspd_vec <- rep(0, mm_rows)
+  wdir_vec <- rep(0, mm_rows)
+  ef_vec   <- rep(0, mm_rows)
 
   for (i in 1:mm_rows) {
     # wind speed
-    mm$wind_spd[i] <- calculate_wind_speed(mm$site_bear[i], mm$site_range[i], 
-      mm$latitude[i], mm$hur_bear[i], mm$hur_spd[i], mm$wind_max[i], rmw, 
-      s_par, asymmetry_factor, friction_factor)
+    wspd_vec[i] <- calculate_wind_speed(sbear_vec[i], srange_vec[i], lat_vec[i], 
+      bear_vec[i], spd_vec[i], wmax_vec[i], rmw, s_par, asymmetry_factor, 
+      friction_factor)
   
     # gust speed
-    mm$gust_spd[i] <- calculate_wind_gust(mm$wind_spd[i], gust_factor)
+    gspd_vec[i] <- calculate_wind_gust(wspd_vec[i], gust_factor)
   
     # wind direction
-    mm$wind_dir[i] <- calculate_wind_direction (mm$latitude[i], 
-      mm$site_bear[i], inflow_angle)
+    wdir_vec[i] <- calculate_wind_direction (lat_vec[i], sbear_vec[i], inflow_angle)
   
     # enhanced Fujita scale
-    mm$ef_sca[i] <- calculate_enhanced_fujita_scale(mm$gust_spd[i])
+    ef_vec[i] <- calculate_enhanced_fujita_scale(gspd_vec[i])
   }
 
-  mm$rmw <- rmw
-  mm$s_par <- s_par
-
-  return(mm)
+  return(list(wspd_vec, gspd_vec, wdir_vec, ef_vec))
 }
 
 #' add_standard_date_time adds a standard datetime column in the format
 #' YYYY-MM-DDThh:mm to a data frame of modeled values.
-#' @param mm data frame of modeled values
-#' @return data frame of modeled values
+#' @param yr_vec vector of years
+#' @param jd_vec vector of Julian days
+#' @return vector of standard datetimes
 #' @noRd
 
-add_standard_date_time <- function(mm) {
+add_standard_date_time <- function(yr_vec, jd_vec) {
   # get integer & fraction of Julian date
-  mm$jd_int <- trunc(mm$jd)
-  mm$jd_frac <- mm$jd - mm$jd_int
+  jd_int_vec <- trunc(jd_vec)
+  jd_frac_vec <- jd_vec - jd_int_vec
 
   # get date in standard format
-  mm$date <- as.Date(mm$jd_int - 1, origin=paste(mm$year, "-01-01", sep=""))
+  date_vec <- as.Date(jd_int_vec - 1, origin=paste(yr_vec, "-01-01", sep=""))
 
   # get hours & minutes
-  mm$min_tot <- round(mm$jd_frac * 1440)
-  mm$hour <- trunc(mm$min_tot / 60)
-  mm$min <- round(mm$min_tot - mm$hour * 60)
+  min_tot_vec <- round(jd_frac_vec * 1440)
+  hour_vec <- trunc(min_tot_vec / 60)
+  min_vec <- round(min_tot_vec - hour_vec * 60)
 
   # convert numbers to strings
-  mm$hh <- sprintf("%02d", mm$hour)
-  mm$mm <- sprintf("%02d", mm$min)
+  hh_Vec <- sprintf("%02d", hour_vec)
+  mm_vec <- sprintf("%02d", min_vec)
 
   # add column for datetime in standard format
-  mm$date_time <- paste(as.character(mm$date), "T", mm$hh, ":", mm$mm, sep="")
+  dt_vec <- paste(as.character(date_vec), "T", hh_Vec, ":", mm_vec, sep="")
 
-  # remove unnecessary columns
-  mm[ , c("jd_int", "jd_frac", "date", "min_tot", "hour", "min", 
-    "hh", "mm")] <- list(NULL)
-  
-  return(mm)
+  return(dt_vec)
 }
 
 #' get_peak_values returns a data frame of peak values for a given
 #' hurricane and site.
 #' @param hur_id hurricane id
 #' @param site_name name of site
-#' @param mm data frame of modeled values
+#' @param dt_vec vector of datetime values
+#' @param wdir_vec vector of wind direction values
+#' @param wspd_vec vector of wind speed values
+#' @param gspd_vec vector of gust speed values
+#' @param efsca_vec vector of enhanced Fujita scale values
 #' @return data frame of peak values
 #' @noRd
 
-get_peak_values <- function(hur_id, site_name, mm) {
+get_peak_values <- function(hur_id, site_name, dt_vec, wdir_vec, wspd_vec, 
+  gspd_vec, efsca_vec) {
+  
   # get time step in minutes
-  h1 <- as.integer(substr(mm$date_time[1], 12, 13))
-  m1 <- as.integer(substr(mm$date_time[1], 15, 16))
+  h1 <- as.integer(substr(dt_vec[1], 12, 13))
+  m1 <- as.integer(substr(dt_vec[1], 15, 16))
   t1 <- h1 * 60 + m1
 
-  h2 <- as.integer(substr(mm$date_time[2], 12, 13))
-  m2 <- as.integer(substr(mm$date_time[2], 15, 16))
+  h2 <- as.integer(substr(dt_vec[2], 12, 13))
+  m2 <- as.integer(substr(dt_vec[2], 15, 16))
   t2 <- h2 * 60 + m2
 
   time_step <- t2 - t1
 
   # get peak wind
-  pk <- mm[mm$wind_spd == max(mm$wind_spd), ]
+  index <- which.max(wspd_vec)
 
-  date_time <- pk$date_time[1]
-  wind_dir <- pk$wind_dir[1]
-  wind_spd <- pk$wind_spd[1]
-  gust_spd <- pk$gust_spd[1]
-  ef_sca <- pk$ef_sca[1]
+  dt <- dt_vec[index]
+  wdir <- wdir_vec[index]
+  wspd <- wspd_vec[index]
+  gspd <- gspd_vec[index]
+  efsca <- efsca_vec[index]
 
   # get wind duration in hours
-  ef0_obs <- mm[mm$ef_sca >= 0, ]
-  ef1_obs <- mm[mm$ef_sca >= 1, ]
-  ef2_obs <- mm[mm$ef_sca >= 2, ]
-  ef3_obs <- mm[mm$ef_sca >= 3, ]
-  ef4_obs <- mm[mm$ef_sca >= 4, ]
-  ef5_obs <- mm[mm$ef_sca >= 5, ]
-
-  ef0 <- nrow(ef0_obs) * time_step/60
-  ef1 <- nrow(ef1_obs) * time_step/60
-  ef2 <- nrow(ef2_obs) * time_step/60
-  ef3 <- nrow(ef3_obs) * time_step/60
-  ef4 <- nrow(ef4_obs) * time_step/60
-  ef5 <- nrow(ef5_obs) * time_step/60
+  ef0 <- sum(efsca_vec >= 0) * time_step/60
+  ef1 <- sum(efsca_vec >= 1) * time_step/60
+  ef2 <- sum(efsca_vec >= 2) * time_step/60
+  ef3 <- sum(efsca_vec >= 3) * time_step/60
+  ef4 <- sum(efsca_vec >= 4) * time_step/60
+  ef5 <- sum(efsca_vec >= 5) * time_step/60
 
   # create data fame of peak values
-  kk <- data.frame(site_name, hur_id, date_time, wind_dir, wind_spd, gust_spd, ef_sca, 
-    ef0, ef1, ef2, ef3, ef4, ef5)
+  kk <- data.frame(site_name, hur_id, dt, wdir, wspd, gspd, efsca, ef0, ef1, ef2, 
+    ef3, ef4, ef5)
 
   return(kk)
 }
@@ -899,7 +883,11 @@ get_peak_values <- function(hur_id, site_name, mm) {
 #' (minutes), and hurricane wind duration (minutes) for a given hurricane over a region.
 #' Results are returned in a raster brick with 6 layers.
 #' @param hur_id hurricane id
-#' @param mm data frame of modeled values
+#' @param lat_vec vector of hurricane latitudes (degrees)
+#' @param lon_vec vector of hurricane longitudes (degrees)
+#' @param wmax_vec vector of maximum sustained wind speeds (meters/second)
+#' @param bear_vec vector of hurricane bearings (degrees)
+#' @param spd_vec vector of hurricane forward speeds (meters/second)
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to calculate values over water
@@ -907,7 +895,12 @@ get_peak_values <- function(hur_id, site_name, mm) {
 #' @return a raster brick containing 6 raster layers
 #' @noRd
 
-get_regional_peak_wind <- function(hur_id, mm, width, time_step, water, timing) {
+get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec, 
+  spd_vec, width, time_step, water, timing) {
+  
+  # get number of rows
+  mm_rows <- length(lat_vec)
+
   # read land-water file
   cwd <- getwd()
   land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
@@ -975,9 +968,9 @@ get_regional_peak_wind <- function(hur_id, mm, width, time_step, water, timing) 
         friction_factor <- friction[cover_type]
         gust_factor <- gust[cover_type]
 
-        for (k in 1:nrow(mm)) {
-          hur_latitude  <- mm$latitude[k]
-          hur_longitude <- mm$longitude[k]
+        for (k in 1:mm_rows) {
+          hur_latitude  <- lat_vec[k]
+          hur_longitude <- lon_vec[k]
   
           # site range
           site_range <- calculate_range(site_latitude, site_longitude, 
@@ -991,7 +984,7 @@ get_regional_peak_wind <- function(hur_id, mm, width, time_step, water, timing) 
 
             # wind speed (m/s)
             wspd <- calculate_wind_speed(site_bear, site_range, hur_latitude, 
-              mm$hur_bear[k], mm$hur_spd[k], mm$wind_max[k], rmw, s_par, asymmetry_factor, 
+              bear_vec[k], spd_vec[k], wmax_vec[k], rmw, s_par, asymmetry_factor, 
               friction_factor)
 
             # update values if gale or higher
@@ -1011,7 +1004,7 @@ get_regional_peak_wind <- function(hur_id, mm, width, time_step, water, timing) 
                 ss[(nrows-i+1), j] <- as.integer(round(wspd))
 
                 # wind direction (degrees)
-                wdir <- calculate_wind_direction(mm$latitude[k], site_bear, inflow_angle)
+                wdir <- calculate_wind_direction(lat_vec[k], site_bear, inflow_angle)
                 dd[(nrows-i+1), j] <- as.integer(round(wdir))
               }
             }
@@ -1686,24 +1679,53 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, sav
   gust_factor <- fixed[4]
 
   # read hurricane track file
-  track <- read_hurricane_track_file(hur_id)
+  tt <- read_hurricane_track_file(hur_id)
   
   # interpolate hurricane location & max wind speed
-  modeled <- interpolate_hurricane_location_max_wind(track, time_step)
+  mm <- interpolate_hurricane_location_max_wind(tt, time_step)
+  yr_vec <- mm[[1]]
+  jd_vec <- mm[[2]]
+  lat_vec <- mm[[3]]
+  lon_vec <- mm[[4]]
+  wmax_vec <- mm[[5]]
   
+  # get number of rows
+  mm_rows <- length(yr_vec)
+
   # interpolate hurricane speed & bearing
-  modeled <- interpolate_hurricane_speed_bearing(track, modeled)
+  mm <- interpolate_hurricane_speed_bearing(tt, jd_vec)
+  spd_vec <- mm[[1]]
+  bear_vec <- mm[[2]]
   
   # calculate range & bearing from site to hurricane center
-  modeled <- calculate_site_range_bearing(modeled, site_latitude, site_longitude)
-  
+  mm <- calculate_site_range_bearing(lat_vec, lon_vec, site_latitude, site_longitude)
+  srange_vec <- mm[[1]]
+  sbear_vec <- mm[[2]]
+    
   # calculate wind speed, wind direction & enhanced Fujita scale at site
-  modeled <- calculate_wind_speed_direction(modeled, inflow_angle, cover_type, rmw, 
-    s_par, asymmetry_factor, friction_factor, gust_factor)
+  mm <- calculate_wind_speed_direction(sbear_vec, srange_vec, lat_vec, bear_vec, 
+    spd_vec, wmax_vec, inflow_angle, rmw, s_par, asymmetry_factor, friction_factor, 
+    gust_factor)
+  wspd_vec <- mm[[1]]
+  gspd_vec <- mm[[2]]
+  wdir_vec <- mm[[3]]
+  ef_vec   <- mm[[4]]
   
   # add standard date & time
-  modeled <- add_standard_date_time(modeled)
-  
+  dt_vec = add_standard_date_time(yr_vec, jd_vec)
+ 
+  # add constant parameters
+  rmw_vec  <- rep(rmw, length=mm_rows)
+  spar_vec <- rep(s_par, length=mm_rows)
+
+  # create data frame
+  mm <- data.frame(dt_vec, yr_vec, jd_vec, lat_vec, lon_vec, wmax_vec, bear_vec, spd_vec, 
+    sbear_vec, srange_vec, rmw_vec, spar_vec, wdir_vec, wspd_vec, gspd_vec, ef_vec)
+
+  colnames(mm) <- c("date_time", "year", "jd", "latitude", "longitude", "wind_max", "hur_bear",
+    "hur_spd", "site_bear", "site_range", "rmw", "s_par", "wind_dir", "wind_spd",
+    "gust_spd", "ef_sca")
+
   # display total elapsed time
   if (timing == TRUE) cat(format_time_difference_ms(start_time, Sys.time()), "ms\n")
 
@@ -1711,12 +1733,12 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, sav
   if (save == TRUE) {
     # save modeled data to CSV file
     modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
-    write.csv(modeled, modeled_file, quote=FALSE, row.names=FALSE)
+    write.csv(mm, modeled_file, quote=FALSE, row.names=FALSE)
     cat("Saving to", modeled_file, "\n")
   
   } else {
     # return modeled data as data frame
-    return(modeled)
+    return(mm)
   }
 }
 
@@ -1749,12 +1771,20 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
   names(ii)[1] <- "hur_id"
   ii_rows <- nrow(ii)
 
-  # create data frame for peak values
-  peak_values <- data.frame(site_name=character(ii_rows), hur_id=character(ii_rows), 
-    date_time=character(ii_rows), wind_dir=numeric(ii_rows), wind_spd=numeric(ii_rows), 
-    gust_spd=numeric(ii_rows), ef_sca=numeric(ii_rows), ef0=numeric(ii_rows), 
-    ef1=numeric(ii_rows), ef2=numeric(ii_rows), ef3=numeric(ii_rows), ef4=numeric(ii_rows), 
-    ef5=numeric(ii_rows), stringsAsFactors=FALSE)
+  # initialize vectors
+  snam_vec <- rep("", length=ii_rows)
+  hid_vec <- rep("", length=ii_rows)
+  dt_vec <- rep("", length=ii_rows)
+  wdir_vec <- rep(0, length=ii_rows)
+  wspd_vec <- rep(0, length=ii_rows)
+  gspd_vec <- rep(0, length=ii_rows)
+  efsca_vec <- rep(0, length=ii_rows)
+  ef0_vec <- rep(0, length=ii_rows)
+  ef1_vec <- rep(0, length=ii_rows)
+  ef2_vec <- rep(0, length=ii_rows)
+  ef3_vec <- rep(0, length=ii_rows)
+  ef4_vec <- rep(0, length=ii_rows)
+  ef5_vec <- rep(0, length=ii_rows)
 
   # record total elasped time if timing is TRUE
   if (timing == TRUE) start_time <- Sys.time()
@@ -1769,21 +1799,22 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
       timing=FALSE)
 
     # get peak values
-    pk <- get_peak_values(hur_id, site_name, mm)
+    pk <- get_peak_values(hur_id, site_name, mm$date_time, mm$wind_dir, mm$wind_spd, 
+      mm$gust_spd, mm$ef_sca)
     
-    peak_values$site_name[i] <- as.character(pk$site_name[1])
-    peak_values$hur_id[i] <- as.character(pk$hur_id[1])
-    peak_values$date_time[i] <- as.character(pk$date_time[1])
-    peak_values$wind_dir[i] <- pk$wind_dir[1]
-    peak_values$wind_spd[i] <- pk$wind_spd[1]
-    peak_values$gust_spd[i] <- pk$gust_spd[1]
-    peak_values$ef_sca[i] <- pk$ef_sca[1]
-    peak_values$ef0[i] <- pk$ef0[1]
-    peak_values$ef1[i] <- pk$ef1[1]
-    peak_values$ef2[i] <- pk$ef2[1]
-    peak_values$ef3[i] <- pk$ef3[1]
-    peak_values$ef4[i] <- pk$ef4[1]
-    peak_values$ef5[i] <- pk$ef5[1]
+    snam_vec[i] <- as.character(pk$site_name[1])
+    hid_vec[i] <- as.character(pk$hur_id[1])
+    dt_vec[i] <- as.character(pk$dt[1])
+    wdir_vec[i] <- pk$wdir[1]
+    wspd_vec[i] <- pk$wspd[1]
+    gspd_vec[i] <- pk$gspd[1]
+    efsca_vec[i] <- pk$efsca[1]
+    ef0_vec[i] <- pk$ef0[1]
+    ef1_vec[i] <- pk$ef1[1]
+    ef2_vec[i] <- pk$ef2[1]
+    ef3_vec[i] <- pk$ef3[1]
+    ef4_vec[i] <- pk$ef4[1]
+    ef5_vec[i] <- pk$ef5[1]
     
     # report progress
     if (timing == TRUE) {
@@ -1791,6 +1822,13 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
       if (x %% 10 == 0) cat("\r", x, "%")
     }
   }
+
+  # create data frame for peak values
+  peak_values <- data.frame(snam_vec, hid_vec, dt_vec, wdir_vec, wspd_vec, gspd_vec,
+    efsca_vec, ef0_vec, ef1_vec, ef2_vec, ef3_vec, ef4_vec, ef5_vec)
+
+  colnames(peak_values) <- c("site_name", "hur_id", "date_time", "wind_dir", "wind_spd", 
+    "gust_spd", "ef_sca", "ef0", "ef1", "ef2", "ef3", "ef4", "ef5")
 
   if (timing == TRUE) {
     elapsed_time <- format_time_difference_hms(start_time, Sys.time())
@@ -1847,16 +1885,23 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
   }
 
   # read hurricane track file
-  track <- read_hurricane_track_file(hur_id)
+  tt <- read_hurricane_track_file(hur_id)
 
   # interpolate hurricane location & max wind speed
-  modeled <- interpolate_hurricane_location_max_wind(track, time_step)
+  mm <- interpolate_hurricane_location_max_wind(tt, time_step)
+  jd_vec <- mm[[2]]
+  lat_vec <- mm[[3]]
+  lon_vec <- mm[[4]]
+  wmax_vec <- mm[[5]]
 
   # interpolate hurricane speed & bearing
-  modeled <- interpolate_hurricane_speed_bearing(track, modeled)
+  mm <- interpolate_hurricane_speed_bearing(tt, jd_vec)
+  spd_vec <- mm[[1]]
+  bear_vec <- mm[[2]]
 
   # get modeled values over region
-  hur_brick <- get_regional_peak_wind(hur_id, modeled, width, time_step, water, timing)
+  hur_brick <- get_regional_peak_wind(hur_id, lat_vec, lon_vec, wmax_vec,
+    bear_vec, spd_vec, width, time_step, water, timing)
 
   # output
   if (save == TRUE) {
@@ -2043,7 +2088,8 @@ hurrecon_summarize_site <- function(hur_id, site_name) {
   mm <- read.csv(modeled_file, header=TRUE, stringsAsFactors=FALSE)
 
   # get peak values
-  pk <- get_peak_values(hur_id, site_name, mm)
+  pk <- get_peak_values(hur_id, site_name, mm$date_time, mm$wind_dir, mm$wind_spd, 
+    mm$gust_spd, mm$ef_sca)
 
   # print peak values
   cat(modeled_name, "\n")
