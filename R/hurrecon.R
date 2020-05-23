@@ -1840,7 +1840,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
     # save modeled data to CSV file
     site_peak_file = paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
     write.csv(peak_values, site_peak_file, quote=FALSE, row.names=FALSE)
-    cat("Saving to", site_peak_file)
+    cat("Saving to", site_peak_file, "\n")
   
   } else {
     # return modeled data as data frame
@@ -1909,6 +1909,7 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
     hur_tif_file = paste(cwd, "/region/", hur_id, ".tif", sep="")
     rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
     raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
+    cat("Saving to", hur_tif_file, "\n")
 
   } else {
     # return modeled values as raster brick
@@ -1988,6 +1989,10 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE) 
   # display total elapsed time
   elapsed_time <- format_time_difference_hms(start_time, Sys.time())
   cat("\r", elapsed_time, "\n")
+
+# diplay where results are saved
+  reg_all_dir <- paste(cwd, "/region-all/", sep="")
+  cat("Saving to", reg_all_dir, "\n")
 }
 
 
