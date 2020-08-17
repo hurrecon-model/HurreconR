@@ -13,7 +13,7 @@ hurrecon_model_site(
   width = FALSE,
   time_step = 1,
   save = TRUE,
-  timing = TRUE
+  console = TRUE
 )
 
 hurrecon_model_site_all(
@@ -21,7 +21,7 @@ hurrecon_model_site_all(
   width = FALSE,
   time_step = 1,
   save = TRUE,
-  timing = TRUE
+  console = TRUE
 )
 
 hurrecon_model_region(
@@ -30,10 +30,15 @@ hurrecon_model_region(
   time_step = NULL,
   water = FALSE,
   save = TRUE,
-  timing = TRUE
+  console = TRUE
 )
 
-hurrecon_model_region_all(width = FALSE, time_step = NULL, water = FALSE)
+hurrecon_model_region_all(
+  width = FALSE,
+  time_step = NULL,
+  water = FALSE,
+  console = TRUE
+)
 }
 \arguments{
 \item{hur_id}{hurricane id}
@@ -46,16 +51,16 @@ hurrecon_model_region_all(width = FALSE, time_step = NULL, water = FALSE)
 
 \item{save}{whether to save results to a GeoTiff file}
 
-\item{timing}{whether to display total elapsed time}
+\item{console}{whether to display messages in console}
 
 \item{water}{whether to calculate results over water}
 }
 \value{
-a data frame of results if save is FALSE
+a data frame of results
 
-a data frame of results if save is FALSE
+a data frame of results
 
-a brick of 6 rasters if save is FALSE
+a brick of 6 rasters
 
 no return value
 }
@@ -65,15 +70,12 @@ hurrecon_model_site calculates wind speed (meters/second), gust speed
 damage for a given hurricane and site. If width is TRUE, the radius of 
 maximum wind (rmw) and profile exponent (s_par) for the given hurricane are
 used, if available. If save is TRUE, results are saved to a CSV file on 
-the site subdirectory; otherwise results are returned as a data frame.  
-If timing is TRUE, the total elasped time is displayed.
+the site subdirectory.
 
 hurrecon_model_site_all creates a table of peak values for all hurricanes
 for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
 profile exponent (s_par) for the given hurricane are used, if available. 
-If save is TRUE, results are saved to a CSV file on the site-all subdirectory; 
-otherwise results are returned as a data frame.  If timing is TRUE, the 
-total elasped time is displayed.
+If save is TRUE, results are saved to a CSV file on the site-all subdirectory.
 
 hurrecon_model_region calculates peak wind speed (meters/second), enhanced
 Fujita scale, wind direction (degrees), cardinal wind direction, gale wind
@@ -82,9 +84,7 @@ hurricane over a region. If width is TRUE, the radius of maximum wind (rmw)
 and profile exponent (s_par) for the given hurricane are used, if available.
 If time_step is NULL, the time step is calculated. If water is FALSE, results
 are calculated for land areas only. If save is TRUE, results are saved as a 
-GeoTiff file on the region subdirectory; otherwise results are returned as
-a raster brick with 6 layers. If timing is TRUE, the total elasped time 
-is displayed.
+GeoTiff file on the region subdirectory.
 
 hurrecon_model_region_all calculates peak wind speed (meters/second), 
 enhanced Fujita scale, wind direction (degrees), cardinal wind direction, 

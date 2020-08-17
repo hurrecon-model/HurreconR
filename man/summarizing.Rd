@@ -6,31 +6,33 @@
 \alias{hurrecon_summarize_site}
 \title{Summarizing Functions}
 \usage{
-hurrecon_summarize_land_water()
+hurrecon_summarize_land_water(console = TRUE)
 
-hurrecon_summarize_tracks()
+hurrecon_summarize_tracks(console = TRUE)
 
-hurrecon_summarize_site(hur_id, site_name)
+hurrecon_summarize_site(hur_id, site_name, console = TRUE)
 }
 \arguments{
+\item{console}{whether to display results in console}
+
 \item{hur_id}{hurricane id}
 
 \item{site_name}{name of site}
 }
 \value{
-no return value
+string containing summary information
 
-no return value
+a string containing summary information
 
-no return value
+a string containing summary information
 }
 \description{
 hurrecon_summarize_land_water displays features of the current land-water
-file (land_water.tif) in the console.
+file (land_water.tif).
 
 hurrecon_summarize_tracks displays features of the current ids file 
-(ids.csv) in the console.
+(ids.csv).
 
 hurrecon_summarize_site displays peak values for a given hurricane
-and site in the console.
+and site.
 }

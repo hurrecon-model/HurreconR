@@ -7,16 +7,18 @@
 \alias{hurrecon_extract_tracks}
 \title{Utility Functions}
 \usage{
-hurrecon_set_path(hur_path)
+hurrecon_set_path(hur_path, console = TRUE)
 
-hurrecon_create_land_water(nrows, ncols, xmn, xmx, ymn, ymx)
+hurrecon_create_land_water(nrows, ncols, xmn, xmx, ymn, ymx, console = TRUE)
 
-hurrecon_reformat_hurdat2(hurdat2_file, path = NULL)
+hurrecon_reformat_hurdat2(hurdat2_file, path = NULL, console = TRUE)
 
-hurrecon_extract_tracks(margin = 0, wind_min = 33)
+hurrecon_extract_tracks(margin = 0, wind_min = 33, console = TRUE)
 }
 \arguments{
 \item{hur_path}{path for current model runs}
+
+\item{console}{whether to display messages in console}
 
 \item{nrows}{number of rows}
 

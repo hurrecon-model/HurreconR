@@ -19,7 +19,7 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# May 2020
+# August 2020
 
 # R version 4.0.0
 
@@ -133,8 +133,7 @@ format_time_difference_ms <- function(start_time, end_time) {
 
 check_file_exists <- function(file_name) {
   if (file.exists(file_name) == FALSE) {
-    cat("\nFile not found:", file_name, "\n")
-    stop()
+    stop("File not found: ", file_name)
   }
 }
 
@@ -156,8 +155,7 @@ read_site_file <- function(site_name) {
   index <- which(ss$site_name == site_name)
 
   if (length(index) == 0) {
-    cat("\nSite not found\n")
-    stop()
+    stop("Site not found")
   }
 
   i <- min(index)
@@ -192,8 +190,7 @@ read_parameter_file <- function(hur_id, width) {
   }
 
   if (length(index) == 0) {
-    cat("Parameter file must contain an entry for ALL\n")
-    stop()
+    stop("Parameter file must contain an entry for ALL")
   }
 
   i <- min(index)
@@ -225,8 +222,7 @@ get_fixed_model_parameters <- function(cover_type) {
     gust_factor <- 1.5
 
   } else {
-    cat("\nCover type must be 1 (water) or 2 (land)\n")
-    stop()
+    stop("Cover type must be 1 (water) or 2 (land)")
   }
 
   return(c(asymmetry_factor, inflow_angle, friction_factor, gust_factor))
@@ -294,8 +290,7 @@ read_hurricane_track_file <- function(hur_id) {
   tt <- zz[(zz$hur_id == hur_id), ]
 
   if (nrow(tt) == 0) {
-    cat("Hurricane not in track file\n")
-    stop()
+    stop("Hurricane not in track file")
   }
 
   return(tt)
@@ -891,12 +886,12 @@ get_peak_values <- function(hur_id, site_name, dt_vec, wdir_vec, wspd_vec,
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to calculate values over water
-#' @param timing whether to report progress
+#' @param console whether to display progress in console
 #' @return a raster brick containing 6 raster layers
 #' @noRd
 
 get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec, 
-  spd_vec, width, time_step, water, timing) {
+  spd_vec, width, time_step, water, console) {
   
   # get number of rows
   mm_rows <- length(lat_vec)
@@ -948,8 +943,8 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
   # get maximum range for gale winds
   range_maximum <- get_maximum_range(wmax, rmw, s_par)
 
-  # record total elasped time if timing is TRUE
-  if (timing == TRUE) start_time <- Sys.time()
+  # record total elasped time
+  start_time <- Sys.time()
 
   # calculate peak wind speed & direction and gale & hurricane duration for each location
   for (i in 1:nrows) {
@@ -1014,7 +1009,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
     }
       
     # report progress
-    if (timing == TRUE) {
+    if (console == TRUE) {
       x <- round(i*100/nrows)
       if (x %% 10 == 0) cat("\r", x, "%")
     }
@@ -1075,7 +1070,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
   hur_brick = raster::brick(ss_raster, ff_raster, dd_raster, cc_raster, gg_raster, hh_raster)
 
   # report elapsed time
-  if (timing == TRUE) {
+  if (console == TRUE) {
     elapsed_time <- format_time_difference_hms(start_time, Sys.time())
     cat("\r", elapsed_time, "\n")
   }
@@ -1287,23 +1282,25 @@ get_track_lat_lon <- function(hur_id, fuj_min, tt, kk) {
 #' @description
 #' hurrecon_set_path sets the path for the current set of model runs.
 #' @param hur_path path for current model runs
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @examples
 #' @rdname utility
 
-hurrecon_set_path <- function(hur_path) {
+hurrecon_set_path <- function(hur_path, console=TRUE) {
   if (hur_path == "") {
-    cat("\nNeed to enter a path\n")
-    stop()
+    stop("Need to enter a path")
 
   } else if (dir.exists(hur_path) == FALSE) {
-    cat("\nPath does not exist\n")
-    stop()
+    stop("Path does not exist")
   }
 
   setwd(hur_path)
-  cat("Path set to", hur_path, "\n")
+
+  if (console == TRUE) {
+    cat("Path set to", hur_path)
+  }
 }
 
 #' @description
@@ -1321,11 +1318,12 @@ hurrecon_set_path <- function(hur_path) {
 #' @param xmx maximum longitude (degrees)
 #' @param ymn minimum latitude (degrees)
 #' @param ymx maximum latitude (degrees)
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname utility
 
-hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx) {
+hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console=TRUE) {
   # get current working directory
   cwd <- getwd()
 
@@ -1360,8 +1358,10 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx) {
   cell_height <- 111*(ymx-ymn)/nrows
   cell_width <- 111*(xmx-xmn)*cos(lat_avg*pi/180)/ncols
 
-  cat("Cell height =", round(cell_height) , "kilometers\n")
-  cat("Cell width  =", round(cell_width), "kilometers\n")
+  if (console == TRUE) {
+    cat("Cell height =", round(cell_height) , "kilometers\n")
+    cat("Cell width  =", round(cell_width), "kilometers")
+  }
 }
 
 #' @description
@@ -1374,11 +1374,12 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx) {
 #' from HURDAT2 plus columns for standard datetime and Julian day with fraction.
 #' @param hurdat2_file name of HURDAT2 file
 #' @param path optional path for HURDAT2 file
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname utility
 
-hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL) {
+hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
   # output files
   ids_file <- "hurdat2_ids.csv"
   tracks_file <- "hurdat2_tracks.csv"
@@ -1465,8 +1466,10 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL) {
     ids[ids_index, ] <- c(hur_id, name, positions, wind_peak)
 
     # report progress
-    x <- round(line_num*100/nlines)
-    if (x %% 10 == 0) cat("\r", x, "%")
+    if (console == TRUE) {
+      x <- round(line_num*100/nlines)
+      if (x %% 10 == 0) cat("\r", x, "%")
+    }
   }
 
   # remove empty lines
@@ -1493,8 +1496,10 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL) {
   write.csv(tracks, tracks_file, row.names=FALSE)
 
   # display number of storms
-  cat("\nNumber of storms = ", ids_index, "\n")
-  cat("Number of observations = ", tracks_index, "\n")
+  if (console == TRUE) {
+    cat("\nNumber of storms =", ids_index, "\n")
+    cat("Number of observations =", tracks_index)
+  }
 }
 
 #' @description
@@ -1512,11 +1517,12 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL) {
 #' land-water file (degrees)
 #' @param wind_min the minimum value of maximum sustained wind speed 
 #' (meters/second)
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname utility
 
-hurrecon_extract_tracks <- function(margin=0, wind_min=33) {
+hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
   # get current working directory
   cwd <- getwd()
 
@@ -1610,8 +1616,10 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33) {
     }
 
     # report progress
-    x <- round(i*100/ii_rows)
-    if (x %% 10 == 0) cat("\r", x, "%")
+    if (console == TRUE) {
+      x <- round(i*100/ii_rows)
+      if (x %% 10 == 0) cat("\r", x, "%")
+    }
   }
 
   # remove empty lines
@@ -1623,8 +1631,10 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33) {
   write.csv(tracks, tracks_file, row.names=FALSE)
 
   # display number of storms
-  cat("\nNumber of storms = ", nrow(ids), "\n")
-  cat("Number of observations = ", nrow(tracks), "\n")
+  if (console == TRUE) {
+    cat("\nNumber of storms =", nrow(ids), "\n")
+    cat("Number of observations =", nrow(tracks))
+  }
 }
 
 
@@ -1638,24 +1648,23 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33) {
 #' damage for a given hurricane and site. If width is TRUE, the radius of 
 #' maximum wind (rmw) and profile exponent (s_par) for the given hurricane are
 #' used, if available. If save is TRUE, results are saved to a CSV file on 
-#' the site subdirectory; otherwise results are returned as a data frame.  
-#' If timing is TRUE, the total elasped time is displayed.
+#' the site subdirectory.
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param save whether to save results to a CSV file
-#' @param timing whether to display total elapsed time
-#' @return a data frame of results if save is FALSE
+#' @param console whether to display messages in console
+#' @return a data frame of results
 #' @export
 #' @examples
 #' @rdname modeling
 
 hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, save=TRUE, 
-  timing=TRUE) { 
+  console=TRUE) { 
 
-  # record total elapsed time if timing is TRUE
-  if (timing == TRUE) start_time <- Sys.time()
+  # record total elapsed time
+  start_time <- Sys.time()
 
   # get current working directory
   cwd <- getwd()
@@ -1727,39 +1736,42 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, sav
     "gust_spd", "ef_sca")
 
   # display total elapsed time
-  if (timing == TRUE) cat(format_time_difference_ms(start_time, Sys.time()), "ms\n")
+  if (console == TRUE) {
+    cat(format_time_difference_ms(start_time, Sys.time()), "ms\n")
+  }
 
   # output
   if (save == TRUE) {
     # save modeled data to CSV file
     modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
     write.csv(mm, modeled_file, quote=FALSE, row.names=FALSE)
-    cat("Saving to", modeled_file, "\n")
+    
+    if (console == TRUE) {
+      cat("Saving to", modeled_file)
+    }
   
-  } else {
-    # return modeled data as data frame
-    return(mm)
   }
+  
+  # return modeled data as data frame
+  invisible(mm)
 }
 
 #' @description
 #' hurrecon_model_site_all creates a table of peak values for all hurricanes
 #' for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
 #' profile exponent (s_par) for the given hurricane are used, if available. 
-#' If save is TRUE, results are saved to a CSV file on the site-all subdirectory; 
-#' otherwise results are returned as a data frame.  If timing is TRUE, the 
-#' total elasped time is displayed.
+#' If save is TRUE, results are saved to a CSV file on the site-all subdirectory.
 #' @param site_name name of site
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param save whether to save results to a CSV file
-#' @param timing whether to display total elapsed time
-#' @return a data frame of results if save is FALSE
+#' @param console whether to display messages in console
+#' @return a data frame of results
 #' @export
 #' @rdname modeling
 
 hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TRUE,
-    timing=TRUE) {
+    console=TRUE) {
 
   # get current working directory
   cwd <- getwd()
@@ -1786,8 +1798,8 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
   ef4_vec <- rep(0, length=ii_rows)
   ef5_vec <- rep(0, length=ii_rows)
 
-  # record total elasped time if timing is TRUE
-  if (timing == TRUE) start_time <- Sys.time()
+  # record total elasped time
+  start_time <- Sys.time()
 
   # get peak values for each hurricane
   for (i in 1:ii_rows) {
@@ -1796,7 +1808,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
 
     # get modeled output
     mm <- hurrecon_model_site(hur_id, site_name, width, time_step, save=FALSE, 
-      timing=FALSE)
+      console=FALSE)
 
     # get peak values
     pk <- get_peak_values(hur_id, site_name, mm$date_time, mm$wind_dir, mm$wind_spd, 
@@ -1817,7 +1829,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
     ef5_vec[i] <- pk$ef5[1]
     
     # report progress
-    if (timing == TRUE) {
+    if (console == TRUE) {
       x <- round(i*100/ii_rows)
       if (x %% 10 == 0) cat("\r", x, "%")
     }
@@ -1830,7 +1842,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
   colnames(peak_values) <- c("site_name", "hur_id", "date_time", "wind_dir", "wind_spd", 
     "gust_spd", "ef_sca", "ef0", "ef1", "ef2", "ef3", "ef4", "ef5")
 
-  if (timing == TRUE) {
+  if (console == TRUE) {
     elapsed_time <- format_time_difference_hms(start_time, Sys.time())
     cat("\r", elapsed_time, "\n")
   }
@@ -1840,12 +1852,15 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
     # save modeled data to CSV file
     site_peak_file = paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
     write.csv(peak_values, site_peak_file, quote=FALSE, row.names=FALSE)
-    cat("Saving to", site_peak_file, "\n")
+
+    if (console == TRUE) {
+      cat("Saving to", site_peak_file)
+    }
   
-  } else {
-    # return modeled data as data frame
-    return(peak_values)
   }
+  
+  # return modeled data as data frame
+  invisible(peak_values)
 }
 
 #' @description
@@ -1856,21 +1871,19 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
 #' and profile exponent (s_par) for the given hurricane are used, if available.
 #' If time_step is NULL, the time step is calculated. If water is FALSE, results
 #' are calculated for land areas only. If save is TRUE, results are saved as a 
-#' GeoTiff file on the region subdirectory; otherwise results are returned as
-#' a raster brick with 6 layers. If timing is TRUE, the total elasped time 
-#' is displayed.
+#' GeoTiff file on the region subdirectory.
 #' @param hur_id hurricane id
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to caculate results over water
 #' @param save whether to save results to a GeoTiff file
-#' @param timing whether to display total elapsed time
-#' @return a brick of 6 rasters if save is FALSE
+#' @param console whether to display messages in console
+#' @return a brick of 6 rasters
 #' @export
 #' @rdname modeling
 
 hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FALSE, 
-  save=TRUE, timing=TRUE) {
+  save=TRUE, console=TRUE) {
 
   # get current working directory
   cwd <- getwd()
@@ -1880,7 +1893,7 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
     time_step <- get_time_step()
   }
 
-  if (timing) {
+  if (console == TRUE) {
     cat("Time step =", time_step, "minutes\n")
   }
 
@@ -1901,7 +1914,7 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 
   # get modeled values over region
   hur_brick <- get_regional_peak_wind(hur_id, lat_vec, lon_vec, wmax_vec,
-    bear_vec, spd_vec, width, time_step, water, timing)
+    bear_vec, spd_vec, width, time_step, water, console)
 
   # output
   if (save == TRUE) {
@@ -1909,12 +1922,15 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
     hur_tif_file = paste(cwd, "/region/", hur_id, ".tif", sep="")
     rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
     raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
-    cat("Saving to", hur_tif_file, "\n")
+    
+    if (console == TRUE) {
+      cat("Saving to", hur_tif_file)
+    }
 
-  } else {
-    # return modeled values as raster brick
-    return(hur_brick)
   }
+  
+  # return modeled values as raster brick
+  invisible(hur_brick)
 }
 
 #' @description
@@ -1931,11 +1947,14 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to calculate results over water
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname modeling
 
-hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE) {
+hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE, 
+    console=TRUE) {
+  
   # get current working directory
   cwd <- getwd()
 
@@ -1944,7 +1963,9 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE) 
     time_step <- get_time_step()
   }
 
-  cat("Time step =", time_step, "minutes\n")
+  if (console == TRUE) {
+    cat("Time step =", time_step, "minutes\n")
+  }
 
   # read ids file
   ids_file <- paste(cwd, "/input/ids.csv", sep="")
@@ -1962,12 +1983,14 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE) 
     hur_id <- ii$hur_id[i]
 
     # report progress
-    x <- round(i*100/ii_rows)
-    cat("\r", x, "%")
+    if (console == TRUE) {
+      x <- round((i-1)*100/ii_rows)
+      cat("\r", x, "%")
+    }
 
     # get modeled values over region
     hur_brick <- hurrecon_model_region(hur_id, width, time_step, water, 
-      save=FALSE, timing=FALSE)
+      save=FALSE, console=FALSE)
 
     # save modeled values in a Geotiff file
     hur_tif_file = paste(cwd, "/region-all/", hur_id, ".tif", sep="")
@@ -1987,12 +2010,16 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE) 
   raster::writeRaster(sum_brick, sum_brick_file, overwrite=TRUE)
 
   # display total elapsed time
-  elapsed_time <- format_time_difference_hms(start_time, Sys.time())
-  cat("\r", elapsed_time, "\n")
+  if (console == TRUE) {
+    elapsed_time <- format_time_difference_hms(start_time, Sys.time())
+    cat("\r", elapsed_time, "\n")
+  }
 
 # diplay where results are saved
-  reg_all_dir <- paste(cwd, "/region-all/", sep="")
-  cat("Saving to", reg_all_dir, "\n")
+  if (console == TRUE) {
+    reg_all_dir <- paste(cwd, "/region-all/", sep="")
+    cat("Saving to", reg_all_dir)
+  }
 }
 
 
@@ -2002,13 +2029,14 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE) 
 #' Summarizing Functions
 #' @description
 #' hurrecon_summarize_land_water displays features of the current land-water
-#' file (land_water.tif) in the console.
-#' @return no return value
+#' file (land_water.tif).
+#' @param console whether to display results in console
+#' @return string containing summary information
 #' @export
 #' @examples
 #' @rdname summarizing
 
-hurrecon_summarize_land_water <- function() {
+hurrecon_summarize_land_water <- function(console=TRUE) {
   # get current working directory
   cwd <- getwd()
 
@@ -2037,22 +2065,29 @@ hurrecon_summarize_land_water <- function() {
 
   time_step <- get_time_step()
 
-  cat("Rows:", nrows, "  Columns:", ncols, "\n")
-  cat("Latitude:", round(ymn, 1), "to", round(ymx, 1), "degrees\n")
-  cat("Longitude:", round(xmn, 1), "to", round(xmx, 1), "degrees\n")
-  cat("Cell height:", round(cell_height), "kilometers\n")
-  cat("Cell width:", round(cell_width), "kilometers\n")
-  cat("Time Step:", time_step, "minutes\n")
+  st <- paste("Rows: ", nrows, "  Columns: ", ncols, "\n", sep="")
+  st <- paste(st, "Latitude: ", round(ymn, 1), " to ", round(ymx, 1), " degrees\n", sep="")
+  st <- paste(st, "Longitude: ", round(xmn, 1), " to ", round(xmx, 1), " degrees\n", sep="")
+  st <- paste(st, "Cell height: ", round(cell_height), " kilometers\n", sep="")
+  st <- paste(st, "Cell width: ", round(cell_width), " kilometers\n", sep="")
+  st <- paste(st, "Time Step: ", time_step, " minutes\n", sep="")
+  
+  if (console == TRUE) {
+    cat(st)
+  }
+
+  invisible(st)
 }
 
 #' @description
 #' hurrecon_summarize_tracks displays features of the current ids file 
-#' (ids.csv) in the console.
-#' @return no return value
+#' (ids.csv).
+#' @param console whether to display results in console
+#' @return a string containing summary information
 #' @export
 #' @rdname summarizing
 
-hurrecon_summarize_tracks <- function() {
+hurrecon_summarize_tracks <- function(console=TRUE) {
   # get current working directory
   cwd <- getwd()
 
@@ -2067,22 +2102,29 @@ hurrecon_summarize_tracks <- function() {
   wind_peak_min = min(ii$wind_peak)
   wind_peak_max = max(ii$wind_peak)
 
-  cat("Number of storms =", ii_rows, "\n")
-  cat("Number of positions =", positions_total, "\n")
-  cat("Minimum peak wind =", wind_peak_min, "m/s\n")
-  cat("Maximum peak wind =", wind_peak_max, "m/s\n")
+  st <- paste("Number of storms = ", ii_rows, "\n", sep="")
+  st <- paste(st, "Number of positions = ", positions_total, "\n", sep="")
+  st <- paste(st, "Minimum peak wind = ", wind_peak_min, "m/s\n", sep="")
+  st <- paste(st, "Maximum peak wind = ", wind_peak_max, "m/s\n", sep="")
+
+  if (console == TRUE) {
+    cat(st)
+  }
+
+  invisible(st)
 }
 
 #' @description
 #' hurrecon_summarize_site displays peak values for a given hurricane
-#' and site in the console.
+#' and site.
 #' @param hur_id hurricane id
 #' @param site_name name of site
-#' @return no return value
+#' @param console whether to display results in console
+#' @return a string containing summary information
 #' @export
 #' @rdname summarizing
 
-hurrecon_summarize_site <- function(hur_id, site_name) {
+hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
   # get current working directory
   cwd <- getwd()
 
@@ -2097,19 +2139,25 @@ hurrecon_summarize_site <- function(hur_id, site_name) {
     mm$gust_spd, mm$ef_sca)
 
   # print peak values
-  cat(modeled_name, "\n")
 
-  cat("PEAK:", as.character(pk$date_time[1]), "\n")
-  cat("Wind dir:", round(pk$wind_dir[1], 0), "deg\n")
-  cat("Wind spd:", round(pk$wind_spd[1], 0), "m/s\n")
-  cat("Gust spd:", round(pk$gust_spd[1], 0), "m/s\n")
+  st <- paste(modeled_name, "\n", sep="")
+  st <- paste(st, "PEAK: ", as.character(pk$dt[1]), "\n", sep="")
+  st <- paste(st, "Wind dir: ", round(pk$wdir[1], 0), " deg\n", sep="")
+  st <- paste(st, "Wind spd: ", round(pk$wspd[1], 0), " m/s\n", sep="")
+  st <- paste(st, "Gust spd: ", round(pk$gspd[1], 0), " m/s\n", sep="")
 
-  if (pk$ef0[1] > 0) cat("EF0:", round(pk$ef0[1], 1), "hours\n")
-  if (pk$ef1[1] > 0) cat("EF1:", round(pk$ef1[1], 1), "hours\n")
-  if (pk$ef2[1] > 0) cat("EF2:", round(pk$ef2[1], 1), "hours\n")
-  if (pk$ef3[1] > 0) cat("EF3:", round(pk$ef3[1], 1), "hours\n")
-  if (pk$ef4[1] > 0) cat("EF4:", round(pk$ef4[1], 1), "hours\n")
-  if (pk$ef5[1] > 0) cat("EF5:", round(pk$ef5[1], 1), "hours\n")
+  if (pk$ef0[1] > 0) st <- paste(st, "EF0: ", round(pk$ef0[1], 1), " hours\n", sep="")
+  if (pk$ef1[1] > 0) st <- paste(st, "EF1: ", round(pk$ef1[1], 1), " hours\n", sep="")
+  if (pk$ef2[1] > 0) st <- paste(st, "EF2: ", round(pk$ef2[1], 1), " hours\n", sep="")
+  if (pk$ef3[1] > 0) st <- paste(st, "EF3: ", round(pk$ef3[1], 1), " hours\n", sep="")
+  if (pk$ef4[1] > 0) st <- paste(st, "EF4: ", round(pk$ef4[1], 1), " hours\n", sep="")
+  if (pk$ef5[1] > 0) st <- paste(st, "EF5: ", round(pk$ef5[1], 1), " hours\n", sep="")
+
+  if (console == TRUE) {
+    cat(st)
+  }
+
+  invisible(st)
 }
 
 
@@ -2184,8 +2232,7 @@ hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='',
     y_var <- "wind_dir"
     y_label <- "Wind Direction (deg)"
   } else {
-    cat("\nvar must be wind_speed, gust_speed, or wind_direction\n")
-    stop()
+    stop("var must be wind_speed, gust_speed, or wind_direction")
   }
 
   # subset by datetime range
@@ -2342,8 +2389,7 @@ hurrecon_plot_site_xy <- function(hur_id, site_name, start_datetime='',
     y_var <- "gust_spd"
     y_label <- "Gust Speed (m/s)"
   } else {
-    cat("\nvar must be wind_speed or gust_speed\n")
-    stop()
+    stop("var must be wind_speed or gust_speed")
   }
 
   # adjust wind direction
@@ -2504,8 +2550,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
     y_var <- "wind_dir"
     y_label <- "Wind Direction (deg)"
   } else {
-    cat("\nvar must be wind_speed, gust_speed, or wind_direction\n")
-    stop()
+    stop("var must be wind_speed, gust_speed, or wind_direction")
   }
 
   # subset by year
@@ -2681,7 +2726,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=ff_cols)
       raster::plot(boundaries, add=TRUE)
       lines(tt$longitude, tt$latitude, col="grey")
-    } else cat("\nNo Fujita values\n")   
+    } else message("No Fujita values")   
 
   } else if (var == "wind_speed") {
     if (raster::maxValue(ss_layer) > 0) {
@@ -2689,7 +2734,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
       lines(tt$longitude, tt$latitude, col="grey")
-    } else cat("\nNo wind speed\n")   
+    } else message("No wind speed")   
 
   } else if (var == "wind_direction") {
     if (raster::maxValue(dd_layer) > 0) {
@@ -2697,7 +2742,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
       lines(tt$longitude, tt$latitude, col="grey")
-    } else cat("\nNo wind direction\n")   
+    } else message("No wind direction")   
     
   } else if (var == "wind_compass") {
     if (raster::maxValue(cc_layer) > 0) {
@@ -2708,7 +2753,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
       raster::plot(boundaries, add=TRUE)
       lines(tt$longitude, tt$latitude, col="grey")
-    } else cat("\nNo wind compass\n")   
+    } else message("No wind compass")   
 
   } else if (var == "gale_duration") {
     if (raster::maxValue(gg_layer) > 0) {
@@ -2716,7 +2761,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       raster::plot(gg_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
       lines(tt$longitude, tt$latitude, col="grey")
-    } else cat("\nNo gale winds\n")   
+    } else message("No gale winds")   
 
   } else if (var == "hurricane_duration") {
     if (raster::maxValue(hh_layer) > 0) {
@@ -2724,11 +2769,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       raster::plot(hh_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
       lines(tt$longitude, tt$latitude, col="grey")
-    } else cat("\nNo hurricane winds\n")   
+    } else message("No hurricane winds")   
 
   } else {
-    cat("\nvar must be wind_speed, fujita_scale, wind_direction, wind_compass, gale_duration, or hurricane_duration\n")
-    stop()
+    stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, gale_duration, or hurricane_duration")
   }
 }
 
@@ -2835,7 +2879,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           }         
         }
       }
-    } else cat("\nNo Fujita values\n")
+    } else message("No Fujita values")
 
   } else if (var == "ef0") {
     if (raster::maxValue(ef0_layer) > 0) {
@@ -2851,7 +2895,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           }         
         }
       }
-    } else cat("\nNo F0 values\n")
+    } else message("No F0 values")
   
   } else if (var == "ef1") {
     if (raster::maxValue(ef1_layer) > 0) {
@@ -2867,7 +2911,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           }         
         }
       }
-    } else cat("\nNo F1 values\n")
+    } else message("No F1 values")
 
   } else if (var == "ef2") {
     if (raster::maxValue(ef2_layer) > 0) {
@@ -2883,7 +2927,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           }         
         }
       }
-    } else cat("\nNo F2 values\n")
+    } else message("No F2 values")
      
   } else if (var == "ef3") {
     if (raster::maxValue(ef3_layer) > 0) {
@@ -2899,7 +2943,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           }         
         }
       }
-    } else cat("\nNo F3 values\n")
+    } else message("No F3 values")
 
   } else if (var == "ef4") {
     if (raster::maxValue(ef4_layer) > 0) {
@@ -2915,7 +2959,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           }         
         }
       }
-    } else cat("\nNo F4 values\n")
+    } else message("No F4 values")
 
   } else if (var == "ef5") {
     if (raster::maxValue(ef5_layer) > 0) {
@@ -2931,11 +2975,10 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           }         
         }
       }
-    } else cat("\nNo F5 values\n")
+    } else message("No F5 values")
 
   } else {
-    cat("\nvar must be efmax, ef0, ef1, ef2, ef3, ef4, or ef5\n")
-    stop()
+    stop("var must be efmax, ef0, ef1, ef2, ef3, ef4, or ef5")
   }
 }
 
