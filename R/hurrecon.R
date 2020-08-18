@@ -2421,22 +2421,27 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 #' @title
 #' Plotting Functions
 #' @description
-#' hurrecon_plot_site_ts creates a time-series plot of wind speed, gust 
-#' speed, or wind direction as a function of datetime for a given 
-#' hurricane and site. Optional start and end datetimes may be specified.
-#' Variables to plot: wind_speed, gust_speed, or wind_direction.
+#' hurrecon_plot_site creates a time-series plot of wind speed, gust 
+#' speed, or wind direction or a scatter plot of wind speed or gust speed
+#' as a function of wind direction for a given hurricane and site. 
+#' Optional start and end datetimes may be specified.
+#' X-variables: datetime or wind_direction. Y-variables: wind_speed, 
+#' gust_speed, or wind_direction.
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param start_datetime optional start datetime (YYYY-MM-DD hh:mm)
 #' @param end_datetime optional end datetime (YYYY-MM-DD hh:mm)
-#' @param var variable to plot
+#' @param xvar dependent variable
+#' @param yvar independent variable
+#' @param adjust whether to subtract 360 degrees from wind directions
+#'   greater than 180 degrees in scatter plot
 #' @return no return value
 #' @export
 #' @examples
 #' @rdname plotting
 
-hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='', 
-  end_datetime='', var="wind_speed") {
+hurrecon_plot_site <- function(hur_id, site_name, start_datetime='', 
+  end_datetime='', xvar="datetime", yvar="wind_speed", adjust=FALSE) {
 
   # get current working directory
   cwd <- getwd()
@@ -2473,21 +2478,49 @@ hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='',
   mm$time <- paste(substr(mm$date_time, 12, 16), ":00", sep="")
   mm$dt <- as.POSIXct(paste(mm$date, " ", mm$time, sep=""))
 
-  # get axis labels
-  x_var <- "dt"
-  x_label <- paste("Datetime (UTC)", sep="")
+  # x variable
+  if (xvar == "datetime") {
+    plot_type <- "time_series"
+    x_var <- "dt"
+    x_label <- "Datetime (UTC)"
+   
+  } else if (xvar == "wind_direction") {
+    plot_type <- "scatter_plot"
+    x_var <- "wind_dir"
+    x_label <- "Wind Direction (deg)"
+  
+  } else {
+    stop("xvar must be datetime or wind_direction")
+  }
 
-  if (var == "wind_speed") {
+  # y variable
+  if (yvar == "wind_speed") {
     y_var <- "wind_spd"
     y_label <- "Wind Speed (m/s)"
-  } else if (var == "gust_speed") {
+
+  } else if (yvar == "gust_speed") {
     y_var <- "gust_spd"
     y_label <- "Gust Speed (m/s)"
-  } else if (var == "wind_direction") {
+
+  } else if (yvar == "wind_direction") {
     y_var <- "wind_dir"
     y_label <- "Wind Direction (deg)"
+
   } else {
-    stop("var must be wind_speed, gust_speed, or wind_direction")
+    stop("yvar must be wind_speed, gust_speed, or wind_direction")
+  }
+
+  # adjust wind direction
+  if (plot_type == "scatter_plot" && adjust == TRUE) {
+    mm$wind_dir2 <- mm$wind_dir
+
+    for (i in 1:mm_rows) {
+       if (mm$wind_dir2[i] > 180) {
+        mm$wind_dir2[i] <- mm$wind_dir2[i] - 360
+      }
+    }
+
+    x_var <- "wind_dir2"
   }
 
   # subset by datetime range
@@ -2534,176 +2567,16 @@ hurrecon_plot_site_ts <- function(hur_id, site_name, start_datetime='',
   # create plot
   par(mar=c(5.1, 5.6, 4.1, 2.1))
 
-  plot(xaxt="n", type="n", xlim, ylim, cex.main=1.7, cex.lab=1.7, xlab=x_label, 
-    ylab=y_label, main=main_label) 
+  if (plot_type == "time_series") {
+    plot(xaxt="n", type="n", xlim, ylim, cex.main=1.7, cex.lab=1.7, xlab=x_label, 
+      ylab=y_label, main=main_label) 
 
-  axis.POSIXct(1, mm_plot$dt, format="%m-%d %H")
+    axis.POSIXct(1, mm_plot$dt, format="%m-%d %H")
 
-  points(mm_plot_efx[c(x_var, y_var)], pch=16, cex=1.0, col=efx_col)
-  points(mm_plot_ef0[c(x_var, y_var)], pch=16, cex=1.0, col=ef0_col)
-  points(mm_plot_ef1[c(x_var, y_var)], pch=16, cex=1.0, col=ef1_col)
-  points(mm_plot_ef2[c(x_var, y_var)], pch=16, cex=1.0, col=ef2_col)
-  points(mm_plot_ef3[c(x_var, y_var)], pch=16, cex=1.0, col=ef3_col)
-  points(mm_plot_ef4[c(x_var, y_var)], pch=16, cex=1.0, col=ef4_col)
-  points(mm_plot_ef5[c(x_var, y_var)], pch=16, cex=1.0, col=ef5_col)
-
-  # create legend
-  labs <- c("No damage")
-  cols <- c(efx_col)
-
-  if (gust_max >= ef0) {
-    labs <- append(labs, "EF0 damage")
-    cols <- append(cols, ef0_col)
-  }
-  if (gust_max >= ef1) {
-    labs <- append(labs, "EF1 damage")
-    cols <- append(cols, ef1_col)
-  }
-  if (gust_max >= ef2) {
-    labs <- append(labs, "EF2 damage")
-    cols <- append(cols, ef2_col)
-  }
-  if (gust_max >= ef3) {
-    labs <- append(labs, "EF3 damage")
-    cols <- append(cols, ef3_col)
-  }
-  if (gust_max >= ef4) {
-    labs <- append(labs, "EF4 damage")
-    cols <- append(cols, ef4_col)
-  }
-  if (gust_max >= ef5) {
-    labs <- append(labs, "EF5 damage")
-    cols <- append(cols, ef5_col)
-  }
-
-  legend("topright", NULL, labs, cols, cex=0.7)
-}
-
-#' @description
-#' hurrecon_plot_site_xy creates a scatter plot of wind speed or gust speed
-#' as a function of wind direction for a given hurricane and site. If adjust 
-#' is TRUE, 360 degrees are substracted from wind direction values greater 
-#' than 180. Optional start and end datetimes may be specified. Variables to
-#' plot: wind_speed or gust_speed.
-#' @param hur_id hurricane id
-#' @param site_name name of site
-#' @param start_datetime optional start datetime in format YYYY-MM-DD hh:mm
-#' @param end_datetime optional end datetime in format YYYY-MM-DD hh:mm
-#' @param var variable to plot
-#' @param adjust whether to subtract 360 degrees from wind direction.
-#' @return no return value
-#' @export
-#' @rdname plotting
-
-hurrecon_plot_site_xy <- function(hur_id, site_name, start_datetime='', 
-  end_datetime='', var="wind_speed", adjust=FALSE) {
-
-  # get current working directory
-  cwd <- getwd()
-
-  # get enhanced Fujita wind speeds
-  ef <- get_fujita_wind_speeds()
-
-  ef0 <- ef[[1]]
-  ef1 <- ef[[2]]
-  ef2 <- ef[[3]]
-  ef3 <- ef[[4]]
-  ef4 <- ef[[5]]
-  ef5 <- ef[[6]]
-
-  # get enhanced Fujita colors
-  ef_col <- get_fujita_colors()
-
-  efx_col <- ef_col[[7]]
-  ef0_col <- ef_col[[1]]
-  ef1_col <- ef_col[[2]]
-  ef2_col <- ef_col[[3]]
-  ef3_col <- ef_col[[4]]
-  ef4_col <- ef_col[[5]]
-  ef5_col <- ef_col[[6]]
- 
-  # read data
-  modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
-  check_file_exists(modeled_file)
-  mm <- read.csv(modeled_file, header=TRUE, stringsAsFactors=FALSE)
-  mm_rows <- nrow(mm)
-
-  # add datetime
-  mm$date <- substr(mm$date_time, 1, 10)
-  mm$time <- paste(substr(mm$date_time, 12, 16), ":00", sep="")
-  mm$dt <- as.POSIXct(paste(mm$date, " ", mm$time, sep=""))
-
-  # get axis labels
-  x_var <- "wind_dir"
-  x_label <- "Wind Direction (deg)"
-
-  if (var == "wind_speed") {
-    y_var <- "wind_spd"
-    y_label <- "Wind Speed (m/s)"
-  } else if (var == "gust_speed") {
-    y_var <- "gust_spd"
-    y_label <- "Gust Speed (m/s)"
   } else {
-    stop("var must be wind_speed or gust_speed")
+    plot(type="n", xlim, ylim, cex.main=1.7, cex.lab=1.7, xlab=x_label, 
+      ylab=y_label, main=main_label)
   }
-
-  # adjust wind direction
-  if (adjust == TRUE) {
-    mm$wind_dir2 <- mm$wind_dir
-
-    for (i in 1:mm_rows) {
-       if (mm$wind_dir2[i] > 180) {
-        mm$wind_dir2[i] <- mm$wind_dir2[i] - 360
-      }
-    }
-
-    x_var <- "wind_dir2"
-  }
-
-  # subset by datetime range
-  if (start_datetime != "") {
-    sdate <- start_datetime
-  } else {
-    sdate <- mm$dt[1]
-  }
-
-  if (end_datetime != "") {
-    edate <- end_datetime
-  } else {
-    edate <- mm$dt[mm_rows]
-  }
-
-  mm_plot <- mm[(mm$dt >= sdate & mm$dt <= edate), ]
-
-  # get variable ranges
-  values <- mm_plot[ , x_var]
-  xmin <- min(values, na.rm=TRUE)
-  xmax <- max(values, na.rm=TRUE)
-  xlim <- c(xmin, xmax)
-
-  values <- mm_plot[ , y_var]
-  ymin <- min(values, na.rm=TRUE)
-  ymax <- max(values, na.rm=TRUE)
-  ylim <- c(ymin, ymax)
-
-  # subset by enhanced Fujita value
-  mm_plot_efx <- mm_plot[mm_plot$gust_spd < ef0, ]
-  mm_plot_ef0 <- mm_plot[(mm_plot$gust_spd >= ef0 & mm_plot$gust_spd < ef1), ]
-  mm_plot_ef1 <- mm_plot[(mm_plot$gust_spd >= ef1 & mm_plot$gust_spd < ef2), ]
-  mm_plot_ef2 <- mm_plot[(mm_plot$gust_spd >= ef2 & mm_plot$gust_spd < ef3), ]
-  mm_plot_ef3 <- mm_plot[(mm_plot$gust_spd >= ef3 & mm_plot$gust_spd < ef4), ]
-  mm_plot_ef4 <- mm_plot[(mm_plot$gust_spd >= ef4 & mm_plot$gust_spd < ef5), ]
-  mm_plot_ef5 <- mm_plot[(mm_plot$gust_spd >= ef5), ]
-
-  gust_max <- max(mm_plot$gust_spd)
-
-  main_label <- paste(hur_id, site_name)
-
-  # create plot
-  par(mar=c(5.1, 5.6, 4.1, 2.1))
-
-  plot(type="n", xlim, ylim, cex.main=1.7, cex.lab=1.7, xlab=x_label, 
-    ylab=y_label, main=main_label)
 
   points(mm_plot_efx[c(x_var, y_var)], pch=16, cex=1.0, col=efx_col)
   points(mm_plot_ef0[c(x_var, y_var)], pch=16, cex=1.0, col=ef0_col)
