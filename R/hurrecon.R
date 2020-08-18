@@ -938,10 +938,10 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
   gust <- c(get_fixed_model_parameters(1)[4], get_fixed_model_parameters(2)[4])
 
   # get maximum wind speed over track
-  wmax <- get_maximum_wind_speed(hur_id)
+  wmax_track <- get_maximum_wind_speed(hur_id)
   
   # get maximum range for gale winds
-  range_maximum <- get_maximum_range(wmax, rmw, s_par)
+  range_maximum <- get_maximum_range(wmax_track, rmw, s_par)
 
   # record total elasped time
   start_time <- Sys.time()
@@ -1068,6 +1068,183 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 
   # create raster brick
   hur_brick = raster::brick(ss_raster, ff_raster, dd_raster, cc_raster, gg_raster, hh_raster)
+
+  # report elapsed time
+  if (console == TRUE) {
+    elapsed_time <- format_time_difference_hms(start_time, Sys.time())
+    cat("\r", elapsed_time, "\n")
+  }
+
+  return(hur_brick)
+}
+
+#' get_regional_datetime calculates wind speed (meters/second), enhanced 
+#' Fujita scale, wind direction (degrees), and cardinal wind direction for 
+#' a given hurricane over a region at a specified datetime. Results are 
+#' returned in a raster brick with 4 layers.
+#' @param hur_id hurricane id
+#' @param lat hurricane latitude (degrees)
+#' @param lon hurricane longitude (degrees)
+#' @param wmax maximum sustained wind speed (meters/second)
+#' @param bear hurricane bearing (degrees)
+#' @param spd hurricane forward speed (meters/second)
+#' @param width whether to use width parameters for the specified hurricane
+#' @param water whether to calculate values over water
+#' @param console whether to display progress in console
+#' @return a raster brick containing 6 raster layers
+#' @noRd
+
+get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width, 
+  water, console) {
+  
+  # read land-water file
+  cwd <- getwd()
+  land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+  check_file_exists(land_water_file)
+  land_water <- raster::raster(land_water_file)
+
+  # get regional values
+  nrows <- dim(land_water)[1]
+  ncols <- dim(land_water)[2]
+
+  lat_min <- raster::extent(land_water)[3]
+  lat_max <- raster::extent(land_water)[4]
+  cell_y <- (lat_max - lat_min)/nrows 
+
+  lon_min <- raster::extent(land_water)[1]
+  lon_max <- raster::extent(land_water)[2]
+  cell_x <- (lon_max - lon_min)/ncols
+
+  # create arrays for values
+  ss <- matrix(0, nrows, ncols)  # wind speed (m/s)
+  ff <- matrix(0, nrows, ncols)  # enhanced Fujita scale
+  dd <- matrix(0, nrows, ncols)  # wind direction (degrees)
+  cc <- matrix(0, nrows, ncols)  # cardinal wind direction (1-8)
+
+  # create matrix from raster
+  land_water_matrix <- raster::as.matrix(land_water)
+  
+  # read parameters file
+  pars <- read_parameter_file(hur_id, width)
+  rmw <- pars[1]
+  s_par <- pars[2]
+
+  # get fixed model parameters by cover type (water=1, land=2)
+  asymmetry <- c(get_fixed_model_parameters(1)[1], get_fixed_model_parameters(2)[1])
+  inflow <- c(get_fixed_model_parameters(1)[2], get_fixed_model_parameters(2)[2])
+  friction <- c(get_fixed_model_parameters(1)[3], get_fixed_model_parameters(2)[3])
+  gust <- c(get_fixed_model_parameters(1)[4], get_fixed_model_parameters(2)[4])
+
+  # get maximum wind speed over track
+  wmax_track <- get_maximum_wind_speed(hur_id)
+  
+  # get maximum range for gale winds
+  range_maximum <- get_maximum_range(wmax_track, rmw, s_par)
+
+  # record total elasped time
+  start_time <- Sys.time()
+
+  # calculate wind speed & direction for each location
+  for (i in 1:nrows) {
+    for (j in 1:ncols) {
+      # get cover type from land_water layer
+      cover_type <- land_water_matrix[nrows-i+1, j]
+
+      if (cover_type == 2 || water == TRUE) {
+        # get site latitude & longitude
+        site_longitude <- lon_min + (j - 0.5)*cell_x
+        site_latitude <- lat_min + (i - 0.5)*cell_y
+
+        # get fixed parameter values
+        asymmetry_factor <- asymmetry[cover_type]
+        inflow_angle <- inflow[cover_type]
+        friction_factor <- friction[cover_type]
+        gust_factor <- gust[cover_type]
+
+        hur_latitude  <- lat
+        hur_longitude <- lon
+  
+        # site range
+        site_range <- calculate_range(site_latitude, site_longitude, 
+          hur_latitude, hur_longitude)
+
+        # skip if too far away
+        if (site_range < range_maximum) {
+          # site bearing
+          site_bear <- calculate_bearing(site_latitude, site_longitude,
+            hur_latitude, hur_longitude)
+
+          # wind speed (m/s)
+          wspd <- calculate_wind_speed(site_bear, site_range, hur_latitude, 
+            bear, spd, wmax, rmw, s_par, asymmetry_factor, friction_factor)
+
+          # update values if gale or higher
+          if (wspd >= 17.5) {
+            # wind speed (m/s)
+            ss[(nrows-i+1), j] <- as.integer(round(wspd))
+
+            # wind direction (degrees)
+            wdir <- calculate_wind_direction(hur_latitude, site_bear, inflow_angle)
+            dd[(nrows-i+1), j] <- as.integer(round(wdir))
+          }
+        }
+      }
+    }
+      
+    # report progress
+    if (console == TRUE) {
+      x <- round(i*100/nrows)
+      if (x %% 10 == 0) cat("\r", x, "%")
+    }
+  }
+  
+  # calculate other values
+  for (i in 1:nrows) {
+    for (j in 1:ncols) {
+      # get cover type from land_water layer
+      cover_type <- land_water_matrix[nrows-i+1, j]
+
+      if (cover_type == 2 || water == TRUE) {
+        wspd <- ss[(nrows-i+1), j]
+
+        # update values if gale or higher
+        if (wspd >= 17.5) {
+          # get fixed parameter values     
+          gust_factor <- gust[cover_type]
+
+          # enhanced Fujita scale
+          gspd <- calculate_wind_gust(wspd, gust_factor)
+          fsca <- calculate_enhanced_fujita_scale(gspd)
+          ff[(nrows-i+1), j] <- fsca + 2
+
+          # cardinal wind direction (1 = north, 2 = northeast, etc)
+          wdir <- dd[(nrows-i+1), j]
+          cdir <- floor((wdir+22.5)/45) + 1
+          if (cdir > 8) cdir <- 1
+          cc[(nrows-i+1), j] <- cdir
+        }
+      }
+    }
+  }
+
+  # add a zero value so wind compass colors match for water and no water
+  cc[1, ncols] <- 0
+
+  # create raster layers
+  ss_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ss)
+  
+  ff_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=ff)
+  
+  dd_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=dd)
+  
+  cc_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+    ymn=lat_min, ymx=lat_max, vals=cc)
+
+  # create raster brick
+  hur_brick = raster::brick(ss_raster, ff_raster, dd_raster, cc_raster)
 
   # report elapsed time
   if (console == TRUE) {
@@ -1934,6 +2111,84 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 }
 
 #' @description
+#' hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
+#' Fujita scale, wind direction (degrees), and cardinal wind direction for a
+#' given hurricane over a region at a specified datetime. If width is
+#' TRUE, the radius of maximum wind (rmw) and profile exponent (s_par) for 
+#' the given hurricane are used, if available. If water is FALSE, results
+#' are calculated for land areas only. If save is TRUE, results are saved as a 
+#' GeoTiff file on the region-dt subdirectory.
+#' @param hur_id hurricane id
+#' @param dt datetime in the format YYYY-MM-DDThh:mm
+#' @param width whether to use width parameters for the specified hurricane
+#' @param water whether to caculate results over water
+#' @param save whether to save results to a GeoTiff file
+#' @param console whether to display messages in console
+#' @return a brick of 4 rasters
+#' @export
+#' @rdname modeling
+
+hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE, 
+  save=TRUE, console=TRUE) {
+
+  # get current working directory
+  cwd <- getwd()
+ 
+  # read hurricane track file
+  tt <- read_hurricane_track_file(hur_id)
+
+  # interpolate hurricane location & max wind speed
+  mm <- interpolate_hurricane_location_max_wind(tt, time_step=1)
+
+  yr_vec <- mm[[1]]
+  jd_vec <- mm[[2]]
+  lat_vec <- mm[[3]]
+  lon_vec <- mm[[4]]
+  wmax_vec <- mm[[5]]
+  dt_vec <- add_standard_date_time(yr_vec, jd_vec)
+  
+  # interpolate hurricane speed & bearing
+  mm <- interpolate_hurricane_speed_bearing(tt, jd_vec)
+  spd_vec <- mm[[1]]
+  bear_vec <- mm[[2]]
+
+  # get values for specified datetime
+  index <- which(dt_vec == dt) 
+  
+  # abort if no match
+  if (length(index) == 0) {
+    stop("Datetime not found")
+  }
+
+  lat <- lat_vec[index]
+  lon <- lon_vec[index]
+  wmax <- wmax_vec[index]
+  spd <- spd_vec[index]
+  bear <- bear_vec[index]
+
+  # get modeled values over region
+  hur_brick <- get_regional_datetime(hur_id, lat, lon, wmax, bear, spd, 
+    width, water, console)
+
+  # output
+  if (save == TRUE) {
+    # save modeled values in a Geotiff file
+    dt2 <- gsub(":", "", dt)
+    hur_tif_file = paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+    rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
+    raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
+    
+    if (console == TRUE) {
+      cat("Saving to", hur_tif_file)
+    }
+
+  }
+  
+  # return modeled values as raster brick
+  invisible(hur_brick)
+}
+
+#' @description
 #' hurrecon_model_region_all calculates peak wind speed (meters/second), 
 #' enhanced Fujita scale, wind direction (degrees), cardinal wind direction, 
 #' duration of gale winds (minutes), and duration of hurricane winds (minutes) 
@@ -2770,6 +3025,125 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       raster::plot(boundaries, add=TRUE)
       lines(tt$longitude, tt$latitude, col="grey")
     } else message("No hurricane winds")   
+
+  } else {
+    stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, gale_duration, or hurricane_duration")
+  }
+}
+
+#' @description
+#' hurrecon_plot_region_dt creates regional plots of enhanced Fujita scale, 
+#' wind speed, wind direction, and cardinal wind direction for a given hurricane
+#' at a specified datetime. Variables to plot: wind_speed, fujita_scale, 
+#' wind_direction, or wind_compass.
+#' @param hur_id hurricane id
+#' @param dt datetime in the format YYYY-MM-DDThh:mm
+#' @param var variable to plot
+#' @return no return value
+#' @export
+#' @rdname plotting
+
+hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
+  # get current working directory
+  cwd <- getwd()
+ 
+  # read raster brick file in GeoTiff format
+  dt2 <- gsub(":", "", dt)
+  hur_tif_file = paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+  check_file_exists(hur_tif_file)
+  hur_brick <- raster::brick(hur_tif_file)
+
+  # get individual layers
+  ss_layer <- raster::subset(hur_brick, 1)  # wind speed (m/s)
+  ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
+  dd_layer <- raster::subset(hur_brick, 3)  # wind direction (degrees)
+  cc_layer <- raster::subset(hur_brick, 4)  # cardinal wind direction (1-8)
+
+  # get vector boundary file
+  boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+  check_file_exists(boundaries_file)
+  boundaries <- rgdal::readOGR(boundaries_file)
+
+  # get hurricane track
+  track_file <- paste(cwd, "/input/tracks.csv", sep="")
+  check_file_exists(track_file)
+  zz <-read.csv(track_file, header=TRUE, stringsAsFactors=FALSE)
+  names(zz)[1] <- "hur_id"
+  index <- which(zz$hur_id == hur_id)
+  tt <- zz[index, ]
+
+  # get values, labels & colors for enhanced Fujita scale plot
+  ef_col <- get_fujita_colors()
+
+  ef0_col <- ef_col[[1]]
+  ef1_col <- ef_col[[2]]
+  ef2_col <- ef_col[[3]]
+  ef3_col <- ef_col[[4]]
+  ef4_col <- ef_col[[5]]
+  ef5_col <- ef_col[[6]]
+  efx_col <- ef_col[[7]]
+
+  ff_all_vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
+  ff_all_labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
+  ff_all_cols <- c("white", efx_col, ef0_col, ef1_col, ef2_col, ef3_col, ef4_col, ef5_col)
+
+  ff_min <- raster::minValue(ff_layer)
+  ff_max <- raster::maxValue(ff_layer)
+
+  ff_vals <- c(ff_all_vals[ff_min+1])
+  ff_labs <- c(ff_all_labs[ff_min+1])
+  ff_cols <- c(ff_all_cols[ff_min+1])
+
+  if (ff_max > ff_min) {
+    for (i in (ff_min+2):(ff_max+1)) {
+      ff_vals <- append(ff_vals, ff_all_vals[i])
+      ff_labs <- append(ff_labs, ff_all_labs[i])
+      ff_cols <- append(ff_cols, ff_all_cols[i])
+    }
+  }
+
+  # set titles
+  xlab <- "Longitude (degrees)"
+  ylab <- "Latitude (degrees)"
+
+  # create plot
+  par(mar=c(5.1, 4.6, 4.1, 2.1))
+  
+  if (var == "fujita_scale") {
+    if (raster::maxValue(ff_layer) > 0) {
+      main_label <- paste(hur_id, "Fujita Scale", dt)
+      arg <- list(at=ff_vals, labels=ff_labs)
+      raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=ff_cols)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else message("No Fujita values")   
+
+  } else if (var == "wind_speed") {
+    if (raster::maxValue(ss_layer) > 0) {
+      main_label <- paste(hur_id, "Wind Speed (m/s)", dt)
+      raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else message("No wind speed")   
+
+  } else if (var == "wind_direction") {
+    if (raster::maxValue(dd_layer) > 0) {
+      main_label <- paste(hur_id, "Wind Direction (deg)", dt)
+      raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else message("No wind direction")   
+    
+  } else if (var == "wind_compass") {
+    if (raster::maxValue(cc_layer) > 0) {
+      main_label <- paste(hur_id, "Wind Direction", dt)
+      arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
+      cols=rainbow(9)
+      cols[1] <- "white"
+      raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
+      raster::plot(boundaries, add=TRUE)
+      lines(tt$longitude, tt$latitude, col="grey")
+    } else message("No wind compass")   
 
   } else {
     stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, gale_duration, or hurricane_duration")

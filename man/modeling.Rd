@@ -4,6 +4,7 @@
 \alias{hurrecon_model_site}
 \alias{hurrecon_model_site_all}
 \alias{hurrecon_model_region}
+\alias{hurrecon_model_region_dt}
 \alias{hurrecon_model_region_all}
 \title{Modeling Functions}
 \usage{
@@ -33,6 +34,15 @@ hurrecon_model_region(
   console = TRUE
 )
 
+hurrecon_model_region_dt(
+  hur_id,
+  dt,
+  width = FALSE,
+  water = FALSE,
+  save = TRUE,
+  console = TRUE
+)
+
 hurrecon_model_region_all(
   width = FALSE,
   time_step = NULL,
@@ -54,6 +64,8 @@ hurrecon_model_region_all(
 \item{console}{whether to display messages in console}
 
 \item{water}{whether to calculate results over water}
+
+\item{dt}{datetime in the format YYYY-MM-DDThh:mm}
 }
 \value{
 a data frame of results
@@ -61,6 +73,8 @@ a data frame of results
 a data frame of results
 
 a brick of 6 rasters
+
+a brick of 4 rasters
 
 no return value
 }
@@ -85,6 +99,14 @@ and profile exponent (s_par) for the given hurricane are used, if available.
 If time_step is NULL, the time step is calculated. If water is FALSE, results
 are calculated for land areas only. If save is TRUE, results are saved as a 
 GeoTiff file on the region subdirectory.
+
+hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
+Fujita scale, wind direction (degrees), and cardinal wind direction for a
+given hurricane over a region at a specified datetime. If width is
+TRUE, the radius of maximum wind (rmw) and profile exponent (s_par) for 
+the given hurricane are used, if available. If water is FALSE, results
+are calculated for land areas only. If save is TRUE, results are saved as a 
+GeoTiff file on the region-dt subdirectory.
 
 hurrecon_model_region_all calculates peak wind speed (meters/second), 
 enhanced Fujita scale, wind direction (degrees), cardinal wind direction, 

@@ -5,6 +5,7 @@
 \alias{hurrecon_plot_site_xy}
 \alias{hurrecon_plot_site_all}
 \alias{hurrecon_plot_region}
+\alias{hurrecon_plot_region_dt}
 \alias{hurrecon_plot_region_all}
 \title{Plotting Functions}
 \usage{
@@ -34,6 +35,8 @@ hurrecon_plot_site_all(
 
 hurrecon_plot_region(hur_id, var = "fujita_scale")
 
+hurrecon_plot_region_dt(hur_id, dt, var = "fujita_scale")
+
 hurrecon_plot_region_all(var = "efmax", tracks = FALSE)
 }
 \arguments{
@@ -53,9 +56,13 @@ hurrecon_plot_region_all(var = "efmax", tracks = FALSE)
 
 \item{end_year}{optional end year}
 
+\item{dt}{datetime in the format YYYY-MM-DDThh:mm}
+
 \item{tracks}{whether to also plot hurricane tracks}
 }
 \value{
+no return value
+
 no return value
 
 no return value
@@ -88,6 +95,11 @@ peak wind speed, wind direction, cardinal wind direction, gale wind
 duration, and hurricane wind duration for a given hurricane. Variables
 to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
 gale_duration, or hurricane_duration.
+
+hurrecon_plot_region_dt creates regional plots of enhanced Fujita scale, 
+wind speed, wind direction, and cardinal wind direction for a given hurricane
+at a specified datetime. Variables to plot: wind_speed, fujita_scale, 
+wind_direction, or wind_compass.
 
 hurrecon_plot_region_all creates regional plots of maximum enhanced Fujita
 value and number of storms for each enhanced Fujita value for all hurricanes.
