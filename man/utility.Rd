@@ -34,7 +34,7 @@ hurrecon_extract_tracks(margin = 0, wind_min = 33, console = TRUE)
 
 \item{hurdat2_file}{name of HURDAT2 file}
 
-\item{path}{optional path for HURDAT2 file}
+\item{path}{optional path for input & output files}
 
 \item{margin}{an optional extension of the geographic window set by the
 land-water file (degrees)}
@@ -65,20 +65,20 @@ file is created on the input subdirectory.
 
 hurrecon_reformat_hurdat2 reformats a HURDAT2 file from the National 
 Hurricane Center for use with the HURRECON model. The input file is assumed
-to be in space-delimited text format. Two output files are created on the
-input subdirectory: hurdat2_ids.csv contains a list of hurricanes including 
-id, name, number of positions, and peak sustained wind speed (meters/second)
+to be in space-delimited text format. Two output files are created: 
+hurdat2_ids.csv contains a list of hurricanes including id, name, number 
+of positions, and peak sustained wind speed (meters/second).
 hurdat2_tracks.csv contains full track information for each hurricane 
-from HURDAT2 plus columns for standard datetime and Julian day with fraction.
+plus columns for standard datetime and Julian day with fraction.
 
 hurrecon_extract_tracks extracts hurricane ids and tracks from the two
 files created by hurrecon_reformat_hurdat2 (hurdat2_ids.csv and 
 hurdat2_tracks.csv). The geographic window used to select hurricanes is 
 set by the land-water file and optionally extended by the margin parameter.
-Selection begins by identifying all positions in the window where the hurricane
+Selection begins by identifying all positions in the window where the storm
 has "HU" (hurricane) status in HURDAT2.  If at least one such position exists,
 the track is extended to include one position before and one position after
-the window, if possible. If the resulting track contains at least two positions 
-and the maximum sustained wind speed equals or exceeds wind_min, the track 
-is included.
+the first and last HU position, if possible. If the resulting track contains 
+at least two positions and the maximum sustained wind speed equals or exceeds 
+wind_min, the track is included.
 }

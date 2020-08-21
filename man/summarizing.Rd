@@ -20,17 +20,17 @@ hurrecon_summarize_site(hur_id, site_name, console = TRUE)
 \item{site_name}{name of site}
 }
 \value{
-string containing summary information
+a string containing summary information
 
 a string containing summary information
 
 a string containing summary information
 }
 \description{
-hurrecon_summarize_land_water displays features of the current land-water
-file (land_water.tif).
+hurrecon_summarize_land_water displays information about the current
+land-water file (land_water.tif).
 
-hurrecon_summarize_tracks displays features of the current ids file 
+hurrecon_summarize_tracks displays information about the current ids file 
 (ids.csv).
 
 hurrecon_summarize_site displays peak values for a given hurricane

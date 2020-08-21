@@ -47,7 +47,8 @@ hurrecon_model_region_all(
   width = FALSE,
   time_step = NULL,
   water = FALSE,
-  console = TRUE
+  console = TRUE,
+  returns = FALSE
 )
 }
 \arguments{
@@ -66,6 +67,8 @@ hurrecon_model_region_all(
 \item{water}{whether to calculate results over water}
 
 \item{dt}{datetime in the format YYYY-MM-DDThh:mm}
+
+\item{returns}{whether to return summary values}
 }
 \value{
 a data frame of results
@@ -76,46 +79,49 @@ a brick of 6 rasters
 
 a brick of 4 rasters
 
-no return value
+a list containing a data frame and a raster brick if return_value 
+is TRUE
 }
 \description{
 hurrecon_model_site calculates wind speed (meters/second), gust speed 
 (meters/second), wind direction (degrees), and enhanced Fujita scale wind 
 damage for a given hurricane and site. If width is TRUE, the radius of 
-maximum wind (rmw) and profile exponent (s_par) for the given hurricane are
-used, if available. If save is TRUE, results are saved to a CSV file on 
-the site subdirectory.
+maximum wind (rmw) and profile exponent (s_par) for this hurricane are
+used; otherwise values for ALL are used. If save is TRUE, results are 
+saved to a CSV file on the site subdirectory.
 
 hurrecon_model_site_all creates a table of peak values for all hurricanes
 for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
-profile exponent (s_par) for the given hurricane are used, if available. 
-If save is TRUE, results are saved to a CSV file on the site-all subdirectory.
+profile exponent (s_par) for the given hurricane are used; otherwise values
+for ALL are used. If save is TRUE, results are saved to a CSV file on the 
+site-all subdirectory.
 
-hurrecon_model_region calculates peak wind speed (meters/second), enhanced
-Fujita scale, wind direction (degrees), cardinal wind direction, gale wind
-duration (minutes), and hurricane wind duration (minutes) for a given 
-hurricane over a region. If width is TRUE, the radius of maximum wind (rmw) 
-and profile exponent (s_par) for the given hurricane are used, if available.
-If time_step is NULL, the time step is calculated. If water is FALSE, results
-are calculated for land areas only. If save is TRUE, results are saved as a 
-GeoTiff file on the region subdirectory.
+hurrecon_model_region calculates peak wind speed (meters/second), peak 
+enhanced Fujita scale, peak wind direction (degrees), peak cardinal wind 
+direction, gale wind duration (minutes), and hurricane wind duration (minutes)
+for a given hurricane over a region. If width is TRUE, the radius of maximum 
+wind (rmw) and profile exponent (s_par) for the given hurricane are used;
+otherwise values for ALL are used. If time_step is NULL, the time step is 
+calculated. If water is FALSE, results are calculated for land areas only. 
+If save is TRUE, results are saved as a GeoTiff file on the region subdirectory.
 
 hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
 Fujita scale, wind direction (degrees), and cardinal wind direction for a
 given hurricane over a region at a specified datetime. If width is
 TRUE, the radius of maximum wind (rmw) and profile exponent (s_par) for 
-the given hurricane are used, if available. If water is FALSE, results
-are calculated for land areas only. If save is TRUE, results are saved as a 
-GeoTiff file on the region-dt subdirectory.
+this hurricane are used; otherwise values for ALL are used. If water 
+is FALSE, results are calculated for land areas only. If save is TRUE, 
+results are saved as a GeoTiff file on the region-dt subdirectory.
 
 hurrecon_model_region_all calculates peak wind speed (meters/second), 
-enhanced Fujita scale, wind direction (degrees), cardinal wind direction, 
-duration of gale winds (minutes), and duration of hurricane winds (minutes) 
-over a region for all hurricanes. If width is TRUE, the radius of maximum 
-wind (rmw) and profile exponent (s_par) for the given hurricane are used, 
-if available. If time_step is NULL, the time step is calculated. If water 
-is FALSE, results are calculated for land areas only. Results for each 
-hurricane are saved in a GeoTiff file on the region-all subdirectory. 
-Summary results for all hurricanes (summary.csv, summary.tif) are also 
-calculated and saved to the region-all subdirectory.
+peak enhanced Fujita scale, peak wind direction (degrees), peak cardinal 
+wind direction, duration of gale winds (minutes), and duration of hurricane
+winds (minutes) over a region for all hurricanes. If width is TRUE, the 
+radius of maximum wind (rmw) and profile exponent (s_par) for the given 
+hurricane are used; otherwise values for ALL are used. If time_step is NULL, 
+the time step is calculated. If water is FALSE, results are calculated 
+for land areas only. Results for each hurricane are saved in a GeoTiff file
+on the region-all subdirectory. Summary results for all hurricanes 
+(summary.csv, summary.tif) are also calculated and saved to the region-all 
+subdirectory. If returns is TRUE, summary values are returned.
 }

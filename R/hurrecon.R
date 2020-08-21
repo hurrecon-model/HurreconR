@@ -128,7 +128,7 @@ format_time_difference_ms <- function(start_time, end_time) {
 #' check_file_exists displays an error message and stops execution if
 #' the specified file does not exist.
 #' @param file_name name of file
-#' @return nothing
+#' @return no return value
 #' @noRd
 
 check_file_exists <- function(file_name) {
@@ -168,8 +168,8 @@ read_site_file <- function(site_name) {
 
 #' read_parameter_file reads a parameter file and returns a vector containing
 #' the radius of maximum wind (rmw) (kilometers) and profile exponent (s_par). 
-#' If width is TRUE, parameters are returned for the specified hurricane, 
-#' if available; otherwise parameters for ALL are returned.
+#' If width is TRUE, parameters are returned for the specified hurricane; 
+#' otherwise parameters for ALL are returned.
 #' @param hur_id hurricane id
 #' @param width whether to use width parameters for the specified hurricane
 #' @return vector of rmw and s_par
@@ -183,14 +183,17 @@ read_parameter_file <- function(hur_id, width) {
   names(pp)[1] <- "hur_id"
 
   # get rmw & s_par parameters
-  if (width) {
+  if (width == TRUE) {
     index <- which(pp$hur_id == hur_id)
+    if (length(index) == 0) {
+      stop("Parameters not found for: ", hur_id)
+    } 
+
   } else {
     index <- which(pp$hur_id == "ALL")
-  }
-
-  if (length(index) == 0) {
-    stop("Parameter file must contain an entry for ALL")
+    if (length(index) == 0) {
+      stop("Parameter file must contain an entry for ALL")
+    }
   }
 
   i <- min(index)
@@ -232,7 +235,7 @@ get_fixed_model_parameters <- function(cover_type) {
 #' assuming a maximum hurricane forward speed of 20 meters per second (1200 
 #' meters per minute). Values are rounded to the nearest 1, 2, 3, 5, 10, 15, 
 #' 30, or 60 minutes.
-#' @return time step
+#' @return time step in minutes
 #' @noRd
 
 get_time_step <- function() {
@@ -302,7 +305,8 @@ read_hurricane_track_file <- function(hur_id) {
 #' specified time step.
 #' @param tt data frame of track data
 #' @param time_step time step (minutes)
-#' @return vectors of year, Julian day, latitude, longitude, max wind speed
+#' @return a list containing vectors of year, Julian day, latitude, longitude, 
+#'   and max wind speed
 #' @noRd
 
 interpolate_hurricane_location_max_wind <- function(tt, time_step) {
@@ -342,19 +346,20 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
   wmax_vec <- append(wmax_vec, tt$wind_max[tt_rows])
 
   year <- as.numeric(substr(tt$date_time[1], 1, 4))
-  yr_vec <- rep(year, times = length(jd_vec))
+  yr_vec <- rep(year, times=length(jd_vec))
 
   return(list(yr_vec, jd_vec, lat_vec, lon_vec, wmax_vec))
 }
 
 #' estimate_range uses the Pythagorean equation to estimate the range 
 #' (kilometers) from one point to another based on the latitude & longitude 
-#' of each point. Note: overestimates range unless on same meridian.
-#' @param lat1 latitude of first point
-#' @param lon1 longitude of first point
-#' @param lat2 latitude of second point
-#' @param lon2 longitude of second point
-#' @return range
+#' of each point. Note: overestimates range unless both points are on the 
+#' same meridian.
+#' @param lat1 latitude of first point (degrees)
+#' @param lon1 longitude of first point (degrees)
+#' @param lat2 latitude of second point (degrees)
+#' @param lon2 longitude of second point (degrees)
+#' @return range in kilometers
 #' @noRd
 
 estimate_range <- function(lat1, lon1, lat2, lon2) {
@@ -372,10 +377,10 @@ estimate_range <- function(lat1, lon1, lat2, lon2) {
 #' calculate_range uses the Haversine formula to calculate the range 
 #' (kilometers) from one point to another based on the latitude & longitude
 #' of each point.
-#' @param lat1 latitude of first point
-#' @param lon1 longitude of first point
-#' @param lat2 latitude of second point
-#' @param lon2 longitude of second point
+#' @param lat1 latitude of first point (degrees)
+#' @param lon1 longitude of first point (degrees)
+#' @param lat2 latitude of second point (degrees)
+#' @param lon2 longitude of second point (degrees)
 #' @return range in kilometers
 #' @noRd
 
@@ -409,10 +414,10 @@ calculate_range <- function(lat1, lon1, lat2, lon2) {
 #' calculate_bearing uses the Haversine formula to calculate the bearing 
 #' (degrees) from one point to another based on the latitude & longitude 
 #' of each point.
-#' @param lat1 latitude of first point
-#' @param lon1 longitude of first point
-#' @param lat2 latitude of second point
-#' @param lon2 longitude of second point
+#' @param lat1 latitude of first point (degrees)
+#' @param lon1 longitude of first point (degrees)
+#' @param lat2 latitude of second point (degrees)
+#' @param lon2 longitude of second point (degrees)
 #' @return bearing in degrees
 #' @noRd
 
@@ -513,13 +518,13 @@ get_maximum_range <- function(wmax, rmw, s_par) {
 #' on mid-segment values.
 #' @param tt data frame of track values
 #' @param jd_vec vector of Julian day values
-#' @return vectors of hurricane speed & bearing
+#' @return a list containing vectors of hurricane speed & bearing
 #' @noRd
 
 interpolate_hurricane_speed_bearing <- function(tt, jd_vec) {
   tt_rows <- nrow(tt)
   vv_rows <- tt_rows - 1
-  mm_rows <- length(jd_vec)
+  num <- length(jd_vec)
 
   # intialize vectors
   vv_jd <- rep(0, vv_rows)
@@ -542,8 +547,8 @@ interpolate_hurricane_speed_bearing <- function(tt, jd_vec) {
   }
   
   # initialize vectors
-  bear_vec <- rep(0, mm_rows)
-  spd_vec <- rep(0, mm_rows)
+  bear_vec <- rep(0, num)
+  spd_vec <- rep(0, num)
 
   # interpolate hurricane speed & bearing for each segment
   for (i in 1:(vv_rows+1)) {
@@ -603,17 +608,17 @@ interpolate_hurricane_speed_bearing <- function(tt, jd_vec) {
 #' @param lon_vec vector of hurricane longitudes (degrees)
 #' @param site_latitude latitude of site (degrees)
 #' @param site_longitude longitude of site (degrees)
-#' @return data frame of modeled values
+#' @return a list containing vectors of range & bearing
 #' @noRd
 
 calculate_site_range_bearing <- function(lat_vec, lon_vec, site_latitude, site_longitude) {
-  mm_rows <- length(lat_vec)
+  num <- length(lat_vec)
 
   # initialize vectors
-  srange <- rep(0, mm_rows)
-  sbear  <- rep(0, mm_rows)
+  srange <- rep(0, num)
+  sbear  <- rep(0, num)
   
-  for (i in 1:mm_rows) {
+  for (i in 1:num) {
     srange[i] <- calculate_range(site_latitude, site_longitude, 
       lat_vec[i], lon_vec[i])
     
@@ -629,7 +634,7 @@ calculate_site_range_bearing <- function(lat_vec, lon_vec, site_latitude, site_l
 #' @param hurr_lat latitude of hurricane (degrees)
 #' @param site_bear bearing from site to hurricane center (degrees)
 #' @param inflow_angle cross-isobar inflow angle (degrees)
-#' @return calculated wind direction
+#' @return calculated wind direction in degrees
 #' @noRd
 
 calculate_wind_direction <- function (hur_lat, site_bear, inflow_angle) {
@@ -698,9 +703,9 @@ calculate_wind_speed <- function (site_bear, site_range, hur_lat, hur_bear, hur_
 
 #' calculate_wind_gust calculates the wind gust speed (meters/second) from 
 #' the sustained wind speed (meters/second) and the gust factor.
-#' @param wind_spd sustained wind speed
-#' @param gust_factor gust factor
-#' @return wind gust speed
+#' @param wind_spd sustained wind speed (meters/second)
+#' @param gust_factor gust factor (meters/second)
+#' @return wind gust speed (meters/second)
 #' @noRd
 
 calculate_wind_gust <- function (wind_spd, gust_factor) {
@@ -710,8 +715,8 @@ calculate_wind_gust <- function (wind_spd, gust_factor) {
 }
 
 #' calculate_enhanced_fujita_scale returns the enhanced Fujita scale value
-#' based on the wind gust speed (meters/second)
-#' @param gust_spd wind gust speed
+#' (0 to 5; -1 = no damage) based on the wind gust speed (meters/second).
+#' @param gust_spd wind gust speed (meters/second)
 #' @return enhanced Fujita scale value
 #' @noRd
 
@@ -745,8 +750,9 @@ calculate_enhanced_fujita_scale <- function (gust_spd) {
   return(ef_sca)
 }
 
-#' calculate_wind_speed_direction calculates the wind speed, gust speed, wind
-#' direction, and enhanced Fujita scale wind damage at a site.
+#' calculate_wind_speed_direction calculates the wind speed (meters/second), 
+#' gust speed (meters/second), wind direction (degrees), and enhanced Fujita 
+#' scale wind damage at a site.
 #' @param sbear_vec vector of site bearings (degrees)
 #' @param srange_vec vector of site ranges (kilometers)
 #' @param lat_vec vector of hurricane latitudes (degrees)
@@ -754,27 +760,28 @@ calculate_enhanced_fujita_scale <- function (gust_spd) {
 #' @param spd_vec vector of hurricane forward speeds (meters/second)
 #' @param wmax_vec vector of maximum sustained wind speeds (meters/second)
 #' @param inflow_angle cross-isobar inflow angle (degrees)
-#' @param rmw radius of maximum winds (kilometers)
+#' @param rmw radius of maximum wind (kilometers)
 #' @param s_par profile exponent
 #' @param asymmetry_factor asymmetry factor
 #' @param friction_factor friction factor
 #' @param gust_factor gust factor
-#' @return vectors of wind speed, gust speed, wind direction, enhanced Fujita value
+#' @return a list containing vectors of wind speed, gust speed, wind direction, 
+#'   and enhanced Fujita value
 #' @noRd
 
 calculate_wind_speed_direction <- function(sbear_vec, srange_vec, lat_vec, 
   bear_vec, spd_vec, wmax_vec, inflow_angle, rmw, s_par, asymmetry_factor, 
   friction_factor, gust_factor) {
  
-  mm_rows <- length(sbear_vec)
+  num <- length(sbear_vec)
 
   # initialize vectors
-  wspd_vec <- rep(0, mm_rows)
-  gspd_vec <- rep(0, mm_rows)
-  wdir_vec <- rep(0, mm_rows)
-  ef_vec   <- rep(0, mm_rows)
+  wspd_vec <- rep(0, num)
+  gspd_vec <- rep(0, num)
+  wdir_vec <- rep(0, num)
+  ef_vec   <- rep(0, num)
 
-  for (i in 1:mm_rows) {
+  for (i in 1:num) {
     # wind speed
     wspd_vec[i] <- calculate_wind_speed(sbear_vec[i], srange_vec[i], lat_vec[i], 
       bear_vec[i], spd_vec[i], wmax_vec[i], rmw, s_par, asymmetry_factor, 
@@ -793,14 +800,14 @@ calculate_wind_speed_direction <- function(sbear_vec, srange_vec, lat_vec,
   return(list(wspd_vec, gspd_vec, wdir_vec, ef_vec))
 }
 
-#' add_standard_date_time adds a standard datetime column in the format
-#' YYYY-MM-DDThh:mm to a data frame of modeled values.
+#' get_standard_date_time creates a vector of standard datetimes in the 
+#' format YYYY-MM-DDThh:mm from vectors of years and Julian days.
 #' @param yr_vec vector of years
 #' @param jd_vec vector of Julian days
 #' @return vector of standard datetimes
 #' @noRd
 
-add_standard_date_time <- function(yr_vec, jd_vec) {
+get_standard_date_time <- function(yr_vec, jd_vec) {
   # get integer & fraction of Julian date
   jd_int_vec <- trunc(jd_vec)
   jd_frac_vec <- jd_vec - jd_int_vec
@@ -814,11 +821,11 @@ add_standard_date_time <- function(yr_vec, jd_vec) {
   min_vec <- round(min_tot_vec - hour_vec * 60)
 
   # convert numbers to strings
-  hh_Vec <- sprintf("%02d", hour_vec)
+  hh_vec <- sprintf("%02d", hour_vec)
   mm_vec <- sprintf("%02d", min_vec)
 
   # add column for datetime in standard format
-  dt_vec <- paste(as.character(date_vec), "T", hh_Vec, ":", mm_vec, sep="")
+  dt_vec <- paste(as.character(date_vec), "T", hh_vec, ":", mm_vec, sep="")
 
   return(dt_vec)
 }
@@ -828,9 +835,9 @@ add_standard_date_time <- function(yr_vec, jd_vec) {
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param dt_vec vector of datetime values
-#' @param wdir_vec vector of wind direction values
-#' @param wspd_vec vector of wind speed values
-#' @param gspd_vec vector of gust speed values
+#' @param wdir_vec vector of wind direction values (degrees)
+#' @param wspd_vec vector of wind speed values (meters/second)
+#' @param gspd_vec vector of gust speed values (meters/second)
 #' @param efsca_vec vector of enhanced Fujita scale values
 #' @return data frame of peak values
 #' @noRd
@@ -874,9 +881,9 @@ get_peak_values <- function(hur_id, site_name, dt_vec, wdir_vec, wspd_vec,
 }
 
 #' get_regional_peak_wind calculates the peak wind speed (meters/second), enhanced 
-#' Fujita scale, wind direction (degrees), cardinal wind direction, gale wind duration 
-#' (minutes), and hurricane wind duration (minutes) for a given hurricane over a region.
-#' Results are returned in a raster brick with 6 layers.
+#' Fujita scale, wind direction (degrees), cardinal wind direction (1-8), gale wind 
+#' duration (minutes), and hurricane wind duration (minutes) for a given hurricane 
+#' over a region. Results are returned in a raster brick with 6 layers.
 #' @param hur_id hurricane id
 #' @param lat_vec vector of hurricane latitudes (degrees)
 #' @param lon_vec vector of hurricane longitudes (degrees)
@@ -894,7 +901,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
   spd_vec, width, time_step, water, console) {
   
   # get number of rows
-  mm_rows <- length(lat_vec)
+  num <- length(lat_vec)
 
   # read land-water file
   cwd <- getwd()
@@ -943,7 +950,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
   # get maximum range for gale winds
   range_maximum <- get_maximum_range(wmax_track, rmw, s_par)
 
-  # record total elasped time
+  # record total elapsed time
   start_time <- Sys.time()
 
   # calculate peak wind speed & direction and gale & hurricane duration for each location
@@ -954,8 +961,8 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 
       if (cover_type == 2 || water == TRUE) {
         # get site latitude & longitude
-        site_longitude <- lon_min + (j - 0.5)*cell_x
         site_latitude <- lat_min + (i - 0.5)*cell_y
+        site_longitude <- lon_min + (j - 0.5)*cell_x
 
         # get fixed parameter values
         asymmetry_factor <- asymmetry[cover_type]
@@ -963,7 +970,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
         friction_factor <- friction[cover_type]
         gust_factor <- gust[cover_type]
 
-        for (k in 1:mm_rows) {
+        for (k in 1:num) {
           hur_latitude  <- lat_vec[k]
           hur_longitude <- lon_vec[k]
   
@@ -999,7 +1006,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
                 ss[(nrows-i+1), j] <- as.integer(round(wspd))
 
                 # wind direction (degrees)
-                wdir <- calculate_wind_direction(lat_vec[k], site_bear, inflow_angle)
+                wdir <- calculate_wind_direction(hur_latitude, site_bear, inflow_angle)
                 dd[(nrows-i+1), j] <- as.integer(round(wdir))
               }
             }
@@ -1079,9 +1086,9 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 }
 
 #' get_regional_datetime calculates wind speed (meters/second), enhanced 
-#' Fujita scale, wind direction (degrees), and cardinal wind direction for 
-#' a given hurricane over a region at a specified datetime. Results are 
-#' returned in a raster brick with 4 layers.
+#' Fujita scale, wind direction (degrees), and cardinal wind direction 
+#' (1-0)for a given hurricane over a region at a specified datetime. Results 
+#' are returned in a raster brick with 4 layers.
 #' @param hur_id hurricane id
 #' @param lat hurricane latitude (degrees)
 #' @param lon hurricane longitude (degrees)
@@ -1091,7 +1098,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 #' @param width whether to use width parameters for the specified hurricane
 #' @param water whether to calculate values over water
 #' @param console whether to display progress in console
-#' @return a raster brick containing 6 raster layers
+#' @return a raster brick containing 4 raster layers
 #' @noRd
 
 get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width, 
@@ -1152,8 +1159,8 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
 
       if (cover_type == 2 || water == TRUE) {
         # get site latitude & longitude
-        site_longitude <- lon_min + (j - 0.5)*cell_x
         site_latitude <- lat_min + (i - 0.5)*cell_y
+        site_longitude <- lon_min + (j - 0.5)*cell_x
 
         # get fixed parameter values
         asymmetry_factor <- asymmetry[cover_type]
@@ -1258,7 +1265,7 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
 #' get_regional_summary_csv compiles regional results for all hurricanes.
 #' Results are returned as a data frame of hurricane ids and maximum enhanced 
 #' Fujita scale values.
-#' @return data frame of summary values
+#' @return a data frame of summary values
 #' @noRd
 
 get_regional_summary_csv <- function() {
@@ -1272,7 +1279,7 @@ get_regional_summary_csv <- function() {
   names(ii)[1] <- "hur_id"
   ii_rows <- nrow(ii)
 
-  # create data frame for peak Fujita value across region
+  # create data frame of peak Fujita values across region
   kk <- data.frame(hur_id=character(ii_rows), efmax=numeric(ii_rows), 
     stringsAsFactors=FALSE)
 
@@ -1431,9 +1438,9 @@ get_regional_summary_tif <- function() {
 #' if the maximum enhanced Fujita value exceeds a specified value.
 #' @param hur_id hurricane id
 #' @param fuj_min minimum enhanced Fujita value
-#' @param tt a data frame of track data
+#' @param tt a data frame of track data (all hurricanes)
 #' @param kk a data frame of summary data
-#' @return a data frame of track data
+#' @return a data frame of track data (this hurricane)
 #' @noRd
 
 get_track_lat_lon <- function(hur_id, fuj_min, tt, kk) {
@@ -1544,13 +1551,13 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 #' @description
 #' hurrecon_reformat_hurdat2 reformats a HURDAT2 file from the National 
 #' Hurricane Center for use with the HURRECON model. The input file is assumed
-#' to be in space-delimited text format. Two output files are created on the
-#' input subdirectory: hurdat2_ids.csv contains a list of hurricanes including 
-#' id, name, number of positions, and peak sustained wind speed (meters/second)
+#' to be in space-delimited text format. Two output files are created: 
+#' hurdat2_ids.csv contains a list of hurricanes including id, name, number 
+#' of positions, and peak sustained wind speed (meters/second).
 #' hurdat2_tracks.csv contains full track information for each hurricane 
-#' from HURDAT2 plus columns for standard datetime and Julian day with fraction.
+#' plus columns for standard datetime and Julian day with fraction.
 #' @param hurdat2_file name of HURDAT2 file
-#' @param path optional path for HURDAT2 file
+#' @param path optional path for input & output files
 #' @param console whether to display messages in console
 #' @return no return value
 #' @export
@@ -1684,12 +1691,12 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
 #' files created by hurrecon_reformat_hurdat2 (hurdat2_ids.csv and 
 #' hurdat2_tracks.csv). The geographic window used to select hurricanes is 
 #' set by the land-water file and optionally extended by the margin parameter.
-#' Selection begins by identifying all positions in the window where the hurricane
+#' Selection begins by identifying all positions in the window where the storm
 #' has "HU" (hurricane) status in HURDAT2.  If at least one such position exists,
 #' the track is extended to include one position before and one position after
-#' the window, if possible. If the resulting track contains at least two positions 
-#' and the maximum sustained wind speed equals or exceeds wind_min, the track 
-#' is included.
+#' the first and last HU position, if possible. If the resulting track contains 
+#' at least two positions and the maximum sustained wind speed equals or exceeds 
+#' wind_min, the track is included.
 #' @param margin an optional extension of the geographic window set by the
 #' land-water file (degrees)
 #' @param wind_min the minimum value of maximum sustained wind speed 
@@ -1823,9 +1830,9 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
 #' hurrecon_model_site calculates wind speed (meters/second), gust speed 
 #' (meters/second), wind direction (degrees), and enhanced Fujita scale wind 
 #' damage for a given hurricane and site. If width is TRUE, the radius of 
-#' maximum wind (rmw) and profile exponent (s_par) for the given hurricane are
-#' used, if available. If save is TRUE, results are saved to a CSV file on 
-#' the site subdirectory.
+#' maximum wind (rmw) and profile exponent (s_par) for this hurricane are
+#' used; otherwise values for ALL are used. If save is TRUE, results are 
+#' saved to a CSV file on the site subdirectory.
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param width whether to use width parameters for the specified hurricane
@@ -1837,8 +1844,8 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
 #' @examples
 #' @rdname modeling
 
-hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, save=TRUE, 
-  console=TRUE) { 
+hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, 
+  save=TRUE, console=TRUE) { 
 
   # record total elapsed time
   start_time <- Sys.time()
@@ -1897,10 +1904,10 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, sav
   wdir_vec <- mm[[3]]
   ef_vec   <- mm[[4]]
   
-  # add standard date & time
-  dt_vec = add_standard_date_time(yr_vec, jd_vec)
+  # get standard date & time
+  dt_vec = get_standard_date_time(yr_vec, jd_vec)
  
-  # add constant parameters
+  # get constant parameters
   rmw_vec  <- rep(rmw, length=mm_rows)
   spar_vec <- rep(s_par, length=mm_rows)
 
@@ -1908,9 +1915,9 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, sav
   mm <- data.frame(dt_vec, yr_vec, jd_vec, lat_vec, lon_vec, wmax_vec, bear_vec, spd_vec, 
     sbear_vec, srange_vec, rmw_vec, spar_vec, wdir_vec, wspd_vec, gspd_vec, ef_vec)
 
-  colnames(mm) <- c("date_time", "year", "jd", "latitude", "longitude", "wind_max", "hur_bear",
-    "hur_spd", "site_bear", "site_range", "rmw", "s_par", "wind_dir", "wind_spd",
-    "gust_spd", "ef_sca")
+  colnames(mm) <- c("date_time", "year", "jd", "latitude", "longitude", "wind_max", 
+    "hur_bear", "hur_spd", "site_bear", "site_range", "rmw", "s_par", "wind_dir", 
+    "wind_spd", "gust_spd", "ef_sca")
 
   # display total elapsed time
   if (console == TRUE) {
@@ -1936,8 +1943,9 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, sav
 #' @description
 #' hurrecon_model_site_all creates a table of peak values for all hurricanes
 #' for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
-#' profile exponent (s_par) for the given hurricane are used, if available. 
-#' If save is TRUE, results are saved to a CSV file on the site-all subdirectory.
+#' profile exponent (s_par) for the given hurricane are used; otherwise values
+#' for ALL are used. If save is TRUE, results are saved to a CSV file on the 
+#' site-all subdirectory.
 #' @param site_name name of site
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
@@ -1947,8 +1955,8 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, sav
 #' @export
 #' @rdname modeling
 
-hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TRUE,
-    console=TRUE) {
+hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, 
+  save=TRUE, console=TRUE) {
 
   # get current working directory
   cwd <- getwd()
@@ -2041,14 +2049,14 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, save=TR
 }
 
 #' @description
-#' hurrecon_model_region calculates peak wind speed (meters/second), enhanced
-#' Fujita scale, wind direction (degrees), cardinal wind direction, gale wind
-#' duration (minutes), and hurricane wind duration (minutes) for a given 
-#' hurricane over a region. If width is TRUE, the radius of maximum wind (rmw) 
-#' and profile exponent (s_par) for the given hurricane are used, if available.
-#' If time_step is NULL, the time step is calculated. If water is FALSE, results
-#' are calculated for land areas only. If save is TRUE, results are saved as a 
-#' GeoTiff file on the region subdirectory.
+#' hurrecon_model_region calculates peak wind speed (meters/second), peak 
+#' enhanced Fujita scale, peak wind direction (degrees), peak cardinal wind 
+#' direction, gale wind duration (minutes), and hurricane wind duration (minutes)
+#' for a given hurricane over a region. If width is TRUE, the radius of maximum 
+#' wind (rmw) and profile exponent (s_par) for the given hurricane are used;
+#' otherwise values for ALL are used. If time_step is NULL, the time step is 
+#' calculated. If water is FALSE, results are calculated for land areas only. 
+#' If save is TRUE, results are saved as a GeoTiff file on the region subdirectory.
 #' @param hur_id hurricane id
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
@@ -2115,9 +2123,9 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 #' Fujita scale, wind direction (degrees), and cardinal wind direction for a
 #' given hurricane over a region at a specified datetime. If width is
 #' TRUE, the radius of maximum wind (rmw) and profile exponent (s_par) for 
-#' the given hurricane are used, if available. If water is FALSE, results
-#' are calculated for land areas only. If save is TRUE, results are saved as a 
-#' GeoTiff file on the region-dt subdirectory.
+#' this hurricane are used; otherwise values for ALL are used. If water 
+#' is FALSE, results are calculated for land areas only. If save is TRUE, 
+#' results are saved as a GeoTiff file on the region-dt subdirectory.
 #' @param hur_id hurricane id
 #' @param dt datetime in the format YYYY-MM-DDThh:mm
 #' @param width whether to use width parameters for the specified hurricane
@@ -2139,13 +2147,12 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 
   # interpolate hurricane location & max wind speed
   mm <- interpolate_hurricane_location_max_wind(tt, time_step=1)
-
   yr_vec <- mm[[1]]
   jd_vec <- mm[[2]]
   lat_vec <- mm[[3]]
   lon_vec <- mm[[4]]
   wmax_vec <- mm[[5]]
-  dt_vec <- add_standard_date_time(yr_vec, jd_vec)
+  dt_vec <- get_standard_date_time(yr_vec, jd_vec)
   
   # interpolate hurricane speed & bearing
   mm <- interpolate_hurricane_speed_bearing(tt, jd_vec)
@@ -2190,25 +2197,28 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 
 #' @description
 #' hurrecon_model_region_all calculates peak wind speed (meters/second), 
-#' enhanced Fujita scale, wind direction (degrees), cardinal wind direction, 
-#' duration of gale winds (minutes), and duration of hurricane winds (minutes) 
-#' over a region for all hurricanes. If width is TRUE, the radius of maximum 
-#' wind (rmw) and profile exponent (s_par) for the given hurricane are used, 
-#' if available. If time_step is NULL, the time step is calculated. If water 
-#' is FALSE, results are calculated for land areas only. Results for each 
-#' hurricane are saved in a GeoTiff file on the region-all subdirectory. 
-#' Summary results for all hurricanes (summary.csv, summary.tif) are also 
-#' calculated and saved to the region-all subdirectory.
+#' peak enhanced Fujita scale, peak wind direction (degrees), peak cardinal 
+#' wind direction, duration of gale winds (minutes), and duration of hurricane
+#' winds (minutes) over a region for all hurricanes. If width is TRUE, the 
+#' radius of maximum wind (rmw) and profile exponent (s_par) for the given 
+#' hurricane are used; otherwise values for ALL are used. If time_step is NULL, 
+#' the time step is calculated. If water is FALSE, results are calculated 
+#' for land areas only. Results for each hurricane are saved in a GeoTiff file
+#' on the region-all subdirectory. Summary results for all hurricanes 
+#' (summary.csv, summary.tif) are also calculated and saved to the region-all 
+#' subdirectory. If returns is TRUE, summary values are returned.
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to calculate results over water
 #' @param console whether to display messages in console
-#' @return no return value
+#' @param returns whether to return summary values
+#' @return a list containing a data frame and a raster brick if return_value 
+#' is TRUE
 #' @export
 #' @rdname modeling
 
 hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE, 
-    console=TRUE) {
+    console=TRUE, returns=FALSE) {
   
   # get current working directory
   cwd <- getwd()
@@ -2275,6 +2285,11 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
     reg_all_dir <- paste(cwd, "/region-all/", sep="")
     cat("Saving to", reg_all_dir)
   }
+
+  # return a list of summary results
+  if (returns == TRUE) {
+    return(list(kk, sum_brick))
+  }
 }
 
 
@@ -2283,10 +2298,10 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
 #' @title
 #' Summarizing Functions
 #' @description
-#' hurrecon_summarize_land_water displays features of the current land-water
-#' file (land_water.tif).
+#' hurrecon_summarize_land_water displays information about the current
+#' land-water file (land_water.tif).
 #' @param console whether to display results in console
-#' @return string containing summary information
+#' @return a string containing summary information
 #' @export
 #' @examples
 #' @rdname summarizing
@@ -2335,7 +2350,7 @@ hurrecon_summarize_land_water <- function(console=TRUE) {
 }
 
 #' @description
-#' hurrecon_summarize_tracks displays features of the current ids file 
+#' hurrecon_summarize_tracks displays information about the current ids file 
 #' (ids.csv).
 #' @param console whether to display results in console
 #' @return a string containing summary information
@@ -2421,12 +2436,12 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 #' @title
 #' Plotting Functions
 #' @description
-#' hurrecon_plot_site creates a time-series plot of wind speed, gust 
-#' speed, or wind direction or a scatter plot of wind speed or gust speed
-#' as a function of wind direction for a given hurricane and site. 
-#' Optional start and end datetimes may be specified.
-#' X-variables: datetime or wind_direction. Y-variables: wind_speed, 
-#' gust_speed, or wind_direction.
+#' hurrecon_plot_site creates a time-series plot (wind speed, gust 
+#' speed, or wind direction as a function of datetime) or a scatter 
+#' plot (wind speed or gust speed as a function of wind direction) 
+#' for a given hurricane and site. Optional start and end datetimes 
+#' may be specified. X-variables: datetime or wind_direction. 
+#' Y-variables: wind_speed, gust_speed, or wind_direction.
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param start_datetime optional start datetime (YYYY-MM-DD hh:mm)
@@ -2434,7 +2449,7 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 #' @param xvar dependent variable
 #' @param yvar independent variable
 #' @param adjust whether to subtract 360 degrees from wind directions
-#'   greater than 180 degrees in scatter plot
+#' greater than 180 degrees in scatter plot
 #' @return no return value
 #' @export
 #' @examples
@@ -2769,10 +2784,10 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 }
 
 #' @description
-#' hurrecon_plot_region creates regional plots of enhanced Fujita scale, 
-#' peak wind speed, wind direction, cardinal wind direction, gale wind 
-#' duration, and hurricane wind duration for a given hurricane. Variables
-#' to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
+#' hurrecon_plot_region creates regional plots of peak enhanced Fujita
+#' scale, peak wind speed, peak wind direction, peak cardinal wind direction,
+#' gale wind duration, and hurricane wind duration for a given hurricane. 
+#' Variables to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
 #' gale_duration, or hurricane_duration.
 #' @param hur_id hurricane id
 #' @param var variable to plot
@@ -3019,7 +3034,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
     } else message("No wind compass")   
 
   } else {
-    stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, gale_duration, or hurricane_duration")
+    stop("var must be wind_speed, fujita_scale, wind_direction, or wind_compass")
   }
 }
 

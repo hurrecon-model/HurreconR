@@ -69,22 +69,22 @@ no return value
 no return value
 }
 \description{
-hurrecon_plot_site creates a time-series plot of wind speed, gust 
-speed, or wind direction or a scatter plot of wind speed or gust speed
-as a function of wind direction for a given hurricane and site. 
-Optional start and end datetimes may be specified.
-X-variables: datetime or wind_direction. Y-variables: wind_speed, 
-gust_speed, or wind_direction.
+hurrecon_plot_site creates a time-series plot (wind speed, gust 
+speed, or wind direction as a function of datetime) or a scatter 
+plot (wind speed or gust speed as a function of wind direction) 
+for a given hurricane and site. Optional start and end datetimes 
+may be specified. X-variables: datetime or wind_direction. 
+Y-variables: wind_speed, gust_speed, or wind_direction.
 
 hurrecon_plot_site_all creates a time-series plot of peak values 
 for all hurricanes for a given site. Optional start and end years
 may be specified. Variables to plot: wind_speed, gust_speed, or
 wind_direction.
 
-hurrecon_plot_region creates regional plots of enhanced Fujita scale, 
-peak wind speed, wind direction, cardinal wind direction, gale wind 
-duration, and hurricane wind duration for a given hurricane. Variables
-to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
+hurrecon_plot_region creates regional plots of peak enhanced Fujita
+scale, peak wind speed, peak wind direction, peak cardinal wind direction,
+gale wind duration, and hurricane wind duration for a given hurricane. 
+Variables to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
 gale_duration, or hurricane_duration.
 
 hurrecon_plot_region_dt creates regional plots of enhanced Fujita scale, 
