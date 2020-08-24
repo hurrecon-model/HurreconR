@@ -1434,6 +1434,52 @@ get_regional_summary_tif <- function() {
   return(sum_brick)
 }
 
+#' get_values_at_datetime returns a data frame of modeled values for the
+#' specified datetime. The data frame includes hurricane latitude (degrees)
+#' longitude (degrees), maximum sustained wind speed (meters/second), forward 
+#' speed (meters/second), and bearing (degrees).
+#' @param hur_id hurricane id
+#' @param tt data frame of track data
+#' @param dt datetime in the format YYYY-MM-DDThh:mm
+#' @return a data frame of modeled values
+#' @noRd
+
+get_values_at_datetime <- function(hur_id, tt, dt) {
+  # interpolate hurricane location & max wind speed
+  mm <- interpolate_hurricane_location_max_wind(tt, time_step=1)
+  yr_vec <- mm[[1]]
+  jd_vec <- mm[[2]]
+  lat_vec <- mm[[3]]
+  lon_vec <- mm[[4]]
+  wmax_vec <- mm[[5]]
+  dt_vec <- get_standard_date_time(yr_vec, jd_vec)
+  
+  # get values for specified datetime
+  index <- which(dt_vec == dt) 
+  
+  # abort if no match
+  if (length(index) == 0) {
+    stop("Datetime not found")
+  }
+
+  # interpolate hurricane speed & bearing
+  mm <- interpolate_hurricane_speed_bearing(tt, jd_vec)
+  spd_vec <- mm[[1]]
+  bear_vec <- mm[[2]]
+
+  # extract values
+  lat <- lat_vec[index]
+  lon <- lon_vec[index]
+  wmax <- wmax_vec[index]
+  spd <- spd_vec[index]
+  bear <- bear_vec[index]
+
+  # create data fame
+  pp <- data.frame(lat, lon, wmax, spd, bear)
+
+  return(pp)
+}
+
 #' get_track_lat_lon returns a data frame of track data for the specified hurricane
 #' if the maximum enhanced Fujita value exceeds a specified value.
 #' @param hur_id hurricane id
@@ -1566,13 +1612,13 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
   # output files
   ids_file <- "hurdat2_ids.csv"
-  tracks_file <- "hurdat2_tracks.csv"
+  track_file <- "hurdat2_tracks.csv"
 
   if (!is.null(path)) {
     if (path[length(path)] != "/") path <- paste(path, "/", sep="")
     hurdat2_file <- paste(path, hurdat2_file, sep="")
     ids_file <- paste(path, ids_file, sep="")
-    tracks_file <- paste(path, tracks_file, sep="")
+    track_file <- paste(path, track_file, sep="")
   }
 
   # read hurdat2 file
@@ -1677,7 +1723,7 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
 
   # save to file
   write.csv(ids, ids_file, row.names=FALSE)
-  write.csv(tracks, tracks_file, row.names=FALSE)
+  write.csv(tracks, track_file, row.names=FALSE)
 
   # display number of storms
   if (console == TRUE) {
@@ -1696,7 +1742,9 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
 #' the track is extended to include one position before and one position after
 #' the first and last HU position, if possible. If the resulting track contains 
 #' at least two positions and the maximum sustained wind speed equals or exceeds 
-#' wind_min, the track is included.
+#' wind_min, the track is included. For included storms, summary data are
+#' written to ids.csv, track data are written to tracks.csv, and track data for
+#' all positions are written to tracks_all.csv.
 #' @param margin an optional extension of the geographic window set by the
 #' land-water file (degrees)
 #' @param wind_min the minimum value of maximum sustained wind speed 
@@ -1712,7 +1760,8 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
 
   # output files
   ids_file <- paste(cwd, "/input/ids.csv", sep="")
-  tracks_file <- paste(cwd, "/input/tracks.csv", sep="")
+  track_file <- paste(cwd, "/input/tracks.csv", sep="")
+  track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
 
   # read hurdat2 ids file
   hurdat2_ids_file <- paste(cwd, "/input/hurdat2_ids.csv", sep="")
@@ -1721,9 +1770,9 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
   ii_rows = nrow(ii)
 
   # read hurdat2 tracks file
-  hurdat2_tracks_file <- paste(cwd, "/input/hurdat2_tracks.csv", sep="")
-  check_file_exists(hurdat2_tracks_file)
-  tt <- read.csv(hurdat2_tracks_file, header=TRUE, stringsAsFactors=FALSE)
+  hurdat2_track_file <- paste(cwd, "/input/hurdat2_tracks.csv", sep="")
+  check_file_exists(hurdat2_track_file)
+  tt <- read.csv(hurdat2_track_file, header=TRUE, stringsAsFactors=FALSE)
   tt_rows = nrow(tt)
 
   # read land-water file
@@ -1747,14 +1796,20 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
     latitude=numeric(tt_rows), longitude=numeric(tt_rows), wind_max=numeric(tt_rows), 
     stringsAsFactors=FALSE)
 
+  tracks_all <- data.frame(hur_id=character(tt_rows), date_time=character(tt_rows),
+    latitude=numeric(tt_rows), longitude=numeric(tt_rows), stringsAsFactors=FALSE)
+
   colnames(ids) <- c("hur_id", "name", "positions", "wind_peak")
 
   colnames(tracks) <- c("hur_id", "name", "date_time", "jd", "status", "latitude", 
     "longitude", "wind_max")
 
+  colnames(tracks_all) <- c("hur_id", "date_time", "latitude", "longitude")
+
   # subset each track
   ids_index <- 0
   tracks_index <- 0
+  tracks_all_index <- 0
 
   for (i in 1:ii_rows) {
     # get hurricane id & name
@@ -1763,6 +1818,7 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
 
     # check if in window
     index <- which(tt$hur_id == hur_id & tt$latitude >= lat_min & tt$latitude <= lat_max & tt$longitude >= lon_min & tt$longitude <= lon_max & tt$status == "HU")
+    index_all <- which(tt$hur_id == hur_id)
 
     # get start & end position
     if (length(index) > 0) {
@@ -1786,7 +1842,10 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
       xx <- tt[start_index:end_index, ]
       positions <- nrow(xx)
       wind_peak <- max(xx$wind_max)
-      
+ 
+      zz <- tt[index_all, ]
+      zz <- zz[ , c("hur_id", "date_time", "latitude", "longitude")]
+
       # store id & tracks if at least 2 positions & exceeds minimum wind speed
       if (positions > 1 && wind_peak >= wind_min) {
         ids_index <- ids_index + 1
@@ -1794,7 +1853,12 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
       
         for (j in 1:nrow(xx)) {
           tracks_index <- tracks_index + 1
-          tracks[tracks_index, ] <- xx[j, ]
+          tracks[tracks_index, ] <- xx[j, ]   
+        }
+
+        for (j in 1:nrow(zz)) {
+          tracks_all_index <- tracks_all_index + 1
+          tracks_all[tracks_all_index, ] <- zz[j, ]
         }
       }
     }
@@ -1809,10 +1873,12 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
   # remove empty lines
   ids <- ids[(ids$hur_id != ""), ]
   tracks <- tracks[(tracks$hur_id != ""), ]
+  tracks_all <- tracks_all[(tracks_all$hur_id != ""), ]
   
   # save to file
   write.csv(ids, ids_file, row.names=FALSE)
-  write.csv(tracks, tracks_file, row.names=FALSE)
+  write.csv(tracks, track_file, row.names=FALSE)
+  write.csv(tracks_all, track_all_file, row.names=FALSE)
 
   # display number of storms
   if (console == TRUE) {
@@ -2145,37 +2211,12 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
   # read hurricane track file
   tt <- read_hurricane_track_file(hur_id)
 
-  # interpolate hurricane location & max wind speed
-  mm <- interpolate_hurricane_location_max_wind(tt, time_step=1)
-  yr_vec <- mm[[1]]
-  jd_vec <- mm[[2]]
-  lat_vec <- mm[[3]]
-  lon_vec <- mm[[4]]
-  wmax_vec <- mm[[5]]
-  dt_vec <- get_standard_date_time(yr_vec, jd_vec)
-  
-  # interpolate hurricane speed & bearing
-  mm <- interpolate_hurricane_speed_bearing(tt, jd_vec)
-  spd_vec <- mm[[1]]
-  bear_vec <- mm[[2]]
-
   # get values for specified datetime
-  index <- which(dt_vec == dt) 
-  
-  # abort if no match
-  if (length(index) == 0) {
-    stop("Datetime not found")
-  }
-
-  lat <- lat_vec[index]
-  lon <- lon_vec[index]
-  wmax <- wmax_vec[index]
-  spd <- spd_vec[index]
-  bear <- bear_vec[index]
+  pp <- get_values_at_datetime(hur_id, tt, dt)
 
   # get modeled values over region
-  hur_brick <- get_regional_datetime(hur_id, lat, lon, wmax, bear, spd, 
-    width, water, console)
+  hur_brick <- get_regional_datetime(hur_id, pp$lat[1], pp$lon[1], pp$wmax[1], 
+    pp$bear[1], pp$spd[1], width, water, console)
 
   # output
   if (save == TRUE) {
@@ -2791,11 +2832,12 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 #' gale_duration, or hurricane_duration.
 #' @param hur_id hurricane id
 #' @param var variable to plot
+#' @param positions whether to plot original positions
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
+hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE) {
   # get current working directory
   cwd <- getwd()
  
@@ -2818,12 +2860,12 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
   boundaries <- rgdal::readOGR(boundaries_file)
 
   # get hurricane track
-  track_file <- paste(cwd, "/input/tracks.csv", sep="")
-  check_file_exists(track_file)
-  zz <-read.csv(track_file, header=TRUE, stringsAsFactors=FALSE)
+  track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+  check_file_exists(track_all_file)
+  zz <-read.csv(track_all_file, header=TRUE, stringsAsFactors=FALSE)
   names(zz)[1] <- "hur_id"
   index <- which(zz$hur_id == hur_id)
-  tt <- zz[index, ]
+  tt_all <- zz[index, ]
 
   # get values, labels & colors for enhanced Fujita scale plot
   ef_col <- get_fujita_colors()
@@ -2868,7 +2910,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       arg <- list(at=ff_vals, labels=ff_labs)
       raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=ff_cols)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
     } else message("No Fujita values")   
 
   } else if (var == "wind_speed") {
@@ -2876,7 +2921,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       main_label <- paste(hur_id, "Wind Speed (m/s)")
       raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
     } else message("No wind speed")   
 
   } else if (var == "wind_direction") {
@@ -2884,7 +2932,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       main_label <- paste(hur_id, "Wind Direction (deg)")
       raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
     } else message("No wind direction")   
     
   } else if (var == "wind_compass") {
@@ -2895,7 +2946,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       cols[1] <- "white"
       raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
     } else message("No wind compass")   
 
   } else if (var == "gale_duration") {
@@ -2903,7 +2957,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       main_label <- paste(hur_id, "Gale Winds (min)")
       raster::plot(gg_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
     } else message("No gale winds")   
 
   } else if (var == "hurricane_duration") {
@@ -2911,7 +2968,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
       main_label <- paste(hur_id, "Hurricane Winds (min)")
       raster::plot(hh_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
     } else message("No hurricane winds")   
 
   } else {
@@ -2927,11 +2987,12 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale") {
 #' @param hur_id hurricane id
 #' @param dt datetime in the format YYYY-MM-DDThh:mm
 #' @param var variable to plot
+#' @param positions whether to plot original positions
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
+hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FALSE) {
   # get current working directory
   cwd <- getwd()
  
@@ -2952,13 +3013,17 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
   check_file_exists(boundaries_file)
   boundaries <- rgdal::readOGR(boundaries_file)
 
+  # get current location
+  tt <- read_hurricane_track_file(hur_id)
+  pp <- get_values_at_datetime(hur_id, tt, dt)
+
   # get hurricane track
-  track_file <- paste(cwd, "/input/tracks.csv", sep="")
-  check_file_exists(track_file)
-  zz <-read.csv(track_file, header=TRUE, stringsAsFactors=FALSE)
+  track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+  check_file_exists(track_all_file)
+  zz <-read.csv(track_all_file, header=TRUE, stringsAsFactors=FALSE)
   names(zz)[1] <- "hur_id"
   index <- which(zz$hur_id == hur_id)
-  tt <- zz[index, ]
+  tt_all <- zz[index, ]
 
   # get values, labels & colors for enhanced Fujita scale plot
   ef_col <- get_fujita_colors()
@@ -3003,7 +3068,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
       arg <- list(at=ff_vals, labels=ff_labs)
       raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=ff_cols)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
+      points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
     } else message("No Fujita values")   
 
   } else if (var == "wind_speed") {
@@ -3011,7 +3080,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
       main_label <- paste(hur_id, "Wind Speed (m/s)", dt)
       raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
+      points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
     } else message("No wind speed")   
 
   } else if (var == "wind_direction") {
@@ -3019,7 +3092,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
       main_label <- paste(hur_id, "Wind Direction (deg)", dt)
       raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
+      points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
     } else message("No wind direction")   
     
   } else if (var == "wind_compass") {
@@ -3030,7 +3107,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale") {
       cols[1] <- "white"
       raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
       raster::plot(boundaries, add=TRUE)
-      lines(tt$longitude, tt$latitude, col="grey")
+      lines(tt_all$longitude, tt_all$latitude, col="brown")
+      if (positions == TRUE) {
+        points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+      }
+      points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
     } else message("No wind compass")   
 
   } else {
@@ -3112,10 +3193,10 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
     ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
     names(ii)[1] <- "hur_id"
 
-    tracks_file <- paste(cwd, "/input/tracks.csv", sep="")
-    check_file_exists(tracks_file)
-    tt <- read.csv(tracks_file, header=TRUE, stringsAsFactors=FALSE)
-    names(tt)[1] <- "hur_id"
+    track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+    check_file_exists(track_all_file)
+    tt_all <- read.csv(track_all_file, header=TRUE, stringsAsFactors=FALSE)
+    names(tt_all)[1] <- "hur_id"
 
     summary_file <- paste(cwd, "/region-all/summary.csv", sep="")
     check_file_exists(summary_file)
@@ -3135,10 +3216,10 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
         for (i in 1:nrow(ii)) {
           hur_id <- ii[i, "hur_id"]
           fuj_min <- 0
-          xx <- get_track_lat_lon(hur_id, fuj_min, tt, kk)
+          xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="grey")
-          }         
+            lines(xx$longitude, xx$latitude, col="brown")
+          }
         }
       }
     } else message("No Fujita values")
@@ -3151,9 +3232,9 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
         for (i in 1:nrow(ii)) {
           hur_id <- ii[i, "hur_id"]
           fuj_min <- 0
-          xx <- get_track_lat_lon(hur_id, fuj_min, tt, kk)
+          xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="grey")
+            lines(xx$longitude, xx$latitude, col="brown")
           }         
         }
       }
@@ -3167,9 +3248,9 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
         for (i in 1:nrow(ii)) {
           hur_id <- ii[i, "hur_id"]
           fuj_min <- 1
-          xx <- get_track_lat_lon(hur_id, fuj_min, tt, kk)
+          xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="grey")
+            lines(xx$longitude, xx$latitude, col="brown")
           }         
         }
       }
@@ -3183,9 +3264,9 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
         for (i in 1:nrow(ii)) {
           hur_id <- ii[i, "hur_id"]
           fuj_min <- 2
-          xx <- get_track_lat_lon(hur_id, fuj_min, tt, kk)
+          xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="grey")
+            lines(xx$longitude, xx$latitude, col="brown")
           }         
         }
       }
@@ -3199,9 +3280,9 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
         for (i in 1:nrow(ii)) {
           hur_id <- ii[i, "hur_id"]
           fuj_min <- 3
-          xx <- get_track_lat_lon(hur_id, fuj_min, tt, kk)
+          xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="grey")
+            lines(xx$longitude, xx$latitude, col="brown")
           }         
         }
       }
@@ -3215,9 +3296,9 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
         for (i in 1:nrow(ii)) {
           hur_id <- ii[i, "hur_id"]
           fuj_min <- 4
-          xx <- get_track_lat_lon(hur_id, fuj_min, tt, kk)
+          xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="grey")
+            lines(xx$longitude, xx$latitude, col="brown")
           }         
         }
       }
@@ -3231,9 +3312,9 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
         for (i in 1:nrow(ii)) {
           hur_id <- ii[i, "hur_id"]
           fuj_min <- 5
-          xx <- get_track_lat_lon(hur_id, fuj_min, tt, kk)
+          xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="grey")
+            lines(xx$longitude, xx$latitude, col="brown")
           }         
         }
       }

@@ -25,9 +25,9 @@ hurrecon_plot_site_all(
   var = "wind_speed"
 )
 
-hurrecon_plot_region(hur_id, var = "fujita_scale")
+hurrecon_plot_region(hur_id, var = "fujita_scale", positions = FALSE)
 
-hurrecon_plot_region_dt(hur_id, dt, var = "fujita_scale")
+hurrecon_plot_region_dt(hur_id, dt, var = "fujita_scale", positions = FALSE)
 
 hurrecon_plot_region_all(var = "efmax", tracks = FALSE)
 }
@@ -52,6 +52,8 @@ greater than 180 degrees in scatter plot}
 \item{end_year}{optional end year}
 
 \item{var}{variable to plot}
+
+\item{positions}{whether to plot original positions}
 
 \item{dt}{datetime in the format YYYY-MM-DDThh:mm}
 

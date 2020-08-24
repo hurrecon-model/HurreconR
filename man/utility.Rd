@@ -80,5 +80,7 @@ has "HU" (hurricane) status in HURDAT2.  If at least one such position exists,
 the track is extended to include one position before and one position after
 the first and last HU position, if possible. If the resulting track contains 
 at least two positions and the maximum sustained wind speed equals or exceeds 
-wind_min, the track is included.
+wind_min, the track is included. For included storms, summary data are
+written to ids.csv, track data are written to tracks.csv, and track data for
+all positions are written to tracks_all.csv.
 }
