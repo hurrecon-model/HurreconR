@@ -52,7 +52,7 @@ no return value
 no return value
 }
 \description{
-hurrecon_set_path sets the path for the current set of model runs.
+set_path sets the path for the current set of model runs.
 
 hurrecon_create_land_water creates a land-water raster file in GeoTiff 
 format from boundary files in shapefile format. The land-water file
@@ -65,22 +65,20 @@ file is created on the input subdirectory.
 
 hurrecon_reformat_hurdat2 reformats a HURDAT2 file from the National 
 Hurricane Center for use with the HURRECON model. The input file is assumed
-to be in space-delimited text format. Two output files are created: 
-hurdat2_ids.csv contains a list of hurricanes including id, name, number 
-of positions, and peak sustained wind speed (meters/second).
-hurdat2_tracks.csv contains full track information for each hurricane 
-plus columns for standard datetime and Julian day with fraction.
+to be in space-delimited text format. The output file (hurdat2_tracks.csv)
+contains full track information for each hurricane plus columns for standard 
+datetime and Julian day with fraction.
 
-hurrecon_extract_tracks extracts hurricane ids and tracks from the two
-files created by hurrecon_reformat_hurdat2 (hurdat2_ids.csv and 
-hurdat2_tracks.csv). The geographic window used to select hurricanes is 
-set by the land-water file and optionally extended by the margin parameter.
-Selection begins by identifying all positions in the window where the storm
-has "HU" (hurricane) status in HURDAT2.  If at least one such position exists,
-the track is extended to include one position before and one position after
-the first and last HU position, if possible. If the resulting track contains 
-at least two positions and the maximum sustained wind speed equals or exceeds 
-wind_min, the track is included. For included storms, summary data are
-written to ids.csv, track data are written to tracks.csv, and track data for
-all positions are written to tracks_all.csv.
+hurrecon_extract_tracks extracts track data from an input track file
+(input_tracks.csv) created from HURDAT2 using hurrecon_reformat_hurdat2
+or created from other sources with the same file structure. The geographic 
+window used to select hurricanes is set by the land-water file and optionally
+extended by the margin parameter. Selection begins by identifying all positions
+in the window where winds reach or exceed hurricane speed (33 meters/second). 
+If at least one such position exists, the track is extended to include one 
+position before and one position after the first and last hurricane position, 
+if possible. If the resulting track contains at least two positions and the 
+maximum sustained wind speed equals or exceeds wind_min, the track is included.
+For included storms, summary data are written to ids.csv, track data are written 
+to tracks.csv, and track data for all positions are written to tracks_all.csv.
 }

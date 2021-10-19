@@ -19,9 +19,9 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# August 2020
+# October 2021
 
-# R version 4.0.0
+# R version 4.1.1
 
 # Required packages:
 #  raster
@@ -167,9 +167,9 @@ read_site_file <- function(site_name) {
 }
 
 #' read_parameter_file reads a parameter file and returns a vector containing
-#' the radius of maximum wind (rmw) (kilometers) and profile exponent (s_par). 
-#' If width is TRUE, parameters are returned for the specified hurricane; 
-#' otherwise parameters for ALL are returned.
+#' the radius of maximum wind (rmw) (kilometers) and a scaling parameter (profile 
+#' exponent) (s_par). If width is TRUE, parameters are returned for the specified 
+#' hurricane; otherwise parameters for ALL are returned.
 #' @param hur_id hurricane id
 #' @param width whether to use width parameters for the specified hurricane
 #' @return vector of rmw and s_par
@@ -286,7 +286,7 @@ read_hurricane_track_file <- function(hur_id) {
   cwd <- getwd()
   track_file <- paste(cwd, "/input/tracks.csv", sep="")
   check_file_exists(track_file)
-  zz <-read.csv(track_file, header=TRUE, stringsAsFactors=FALSE)
+  zz <-read.csv(track_file, header=TRUE)
   names(zz)[1] <- "hur_id"
 
   # subset by hurricane name
@@ -480,7 +480,7 @@ get_maximum_wind_speed <- function(hur_id) {
   cwd <- getwd()
   track_file <- paste(cwd, "/input/tracks.csv", sep="")
   check_file_exists(track_file)
-  zz <-read.csv(track_file, header=TRUE, stringsAsFactors=FALSE)
+  zz <-read.csv(track_file, header=TRUE)
   names(zz)[1] <- "hur_id"
 
   # subset by hurricane name
@@ -496,7 +496,7 @@ get_maximum_wind_speed <- function(hur_id) {
 #' speeds are less than gale (17.5 meters/second).
 #' @param wmax maximum sustained wind speed (meters/second)
 #' @param rmw radius of maximum winds (kilometers)
-#' @param s_par profile constant
+#' @param s_par scaling parameter
 #' @return range in kilometers
 #' @noRd
 
@@ -504,7 +504,7 @@ get_maximum_range <- function(wmax, rmw, s_par) {
   rang <- rmw
   wspd <- 100
 
-  while (wspd > 17.5) {
+  while (wspd >= 17.5) {
     rang <- rang + 10
     x <- (rmw/rang)^s_par
     wspd <- wmax * sqrt(x * exp(1-x))
@@ -661,7 +661,7 @@ calculate_wind_direction <- function (hur_lat, site_bear, inflow_angle) {
 #' @param hur_spd hurricane speed (meters/second)
 #' @param wind_max maximum sustained wind speed (meters/second)
 #' @param rmw radius of maximum winds (kilometers)
-#' @param s_par profile exponent
+#' @param s_par scaling parameter
 #' @param asymmetry_factor asymmetry factor
 #' @param friction_factor friction factor
 #' @return calculated sustained wind speed (meters/second)
@@ -761,7 +761,7 @@ calculate_enhanced_fujita_scale <- function (gust_spd) {
 #' @param wmax_vec vector of maximum sustained wind speeds (meters/second)
 #' @param inflow_angle cross-isobar inflow angle (degrees)
 #' @param rmw radius of maximum wind (kilometers)
-#' @param s_par profile exponent
+#' @param s_par scaling parameter
 #' @param asymmetry_factor asymmetry factor
 #' @param friction_factor friction factor
 #' @param gust_factor gust factor
@@ -1055,26 +1055,26 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
   cc[1, ncols] <- 0
 
   # create raster layers
-  ss_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  ss_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=ss)
   
-  ff_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  ff_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=ff)
   
-  dd_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  dd_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=dd)
   
-  cc_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  cc_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=cc)
 
-  gg_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  gg_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=gg)
 
-  hh_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  hh_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=hh)
 
   # create raster brick
-  hur_brick = raster::brick(ss_raster, ff_raster, dd_raster, cc_raster, gg_raster, hh_raster)
+  hur_brick <- raster::brick(ss_raster, ff_raster, dd_raster, cc_raster, gg_raster, hh_raster)
 
   # report elapsed time
   if (console == TRUE) {
@@ -1238,20 +1238,20 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
   cc[1, ncols] <- 0
 
   # create raster layers
-  ss_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  ss_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=ss)
   
-  ff_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  ff_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=ff)
   
-  dd_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  dd_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=dd)
   
-  cc_raster = raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+  cc_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
     ymn=lat_min, ymx=lat_max, vals=cc)
 
   # create raster brick
-  hur_brick = raster::brick(ss_raster, ff_raster, dd_raster, cc_raster)
+  hur_brick <- raster::brick(ss_raster, ff_raster, dd_raster, cc_raster)
 
   # report elapsed time
   if (console == TRUE) {
@@ -1275,13 +1275,12 @@ get_regional_summary_csv <- function() {
   # read ids file
   ids_file <- paste(cwd, "/input/ids.csv", sep="")
   check_file_exists(ids_file)
-  ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
+  ii <- read.csv(ids_file, header=TRUE)
   names(ii)[1] <- "hur_id"
   ii_rows <- nrow(ii)
 
   # create data frame of peak Fujita values across region
-  kk <- data.frame(hur_id=character(ii_rows), efmax=numeric(ii_rows), 
-    stringsAsFactors=FALSE)
+  kk <- data.frame(hur_id=character(ii_rows), efmax=numeric(ii_rows))
 
   # record values for each hurricane
   for (i in 1:ii_rows) {
@@ -1317,7 +1316,7 @@ get_regional_summary_tif <- function() {
   # read ids file
   ids_file <- paste(cwd, "/input/ids.csv", sep="")
   check_file_exists(ids_file)
-  ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
+  ii <- read.csv(ids_file, header=TRUE)
   names(ii)[1] <- "hur_id"
   ii_rows <- nrow(ii)
 
@@ -1510,7 +1509,7 @@ get_track_lat_lon <- function(hur_id, fuj_min, tt, kk) {
 #' @title
 #' Utility Functions
 #' @description
-#' hurrecon_set_path sets the path for the current set of model runs.
+#' set_path sets the path for the current set of model runs.
 #' @param hur_path path for current model runs
 #' @param console whether to display messages in console
 #' @return no return value
@@ -1569,7 +1568,7 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 
   # read reclassify file
   reclassify_file <- paste(cwd, "/vector/reclassify.csv", sep="")
-  rcl <- read.csv(reclassify_file, stringsAsFactors=FALSE)
+  rcl <- read.csv(reclassify_file)
 
   # convert to matrix
   rcl <- as.matrix(rcl, ncol=3, byrow=TRUE)
@@ -1597,11 +1596,9 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 #' @description
 #' hurrecon_reformat_hurdat2 reformats a HURDAT2 file from the National 
 #' Hurricane Center for use with the HURRECON model. The input file is assumed
-#' to be in space-delimited text format. Two output files are created: 
-#' hurdat2_ids.csv contains a list of hurricanes including id, name, number 
-#' of positions, and peak sustained wind speed (meters/second).
-#' hurdat2_tracks.csv contains full track information for each hurricane 
-#' plus columns for standard datetime and Julian day with fraction.
+#' to be in space-delimited text format. The output file (hurdat2_tracks.csv)
+#' contains full track information for each hurricane plus columns for standard 
+#' datetime and Julian day with fraction.
 #' @param hurdat2_file name of HURDAT2 file
 #' @param path optional path for input & output files
 #' @param console whether to display messages in console
@@ -1611,13 +1608,11 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 
 hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
   # output files
-  ids_file <- "hurdat2_ids.csv"
   track_file <- "hurdat2_tracks.csv"
 
   if (!is.null(path)) {
     if (path[length(path)] != "/") path <- paste(path, "/", sep="")
     hurdat2_file <- paste(path, hurdat2_file, sep="")
-    ids_file <- paste(path, ids_file, sep="")
     track_file <- paste(path, track_file, sep="")
   }
 
@@ -1629,24 +1624,17 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
   # close hurdat2 file
   close(file_in)
 
-  # create data frames
-  ids <- data.frame(hur_id=character(nlines), name=character(nlines), positions=numeric(nlines),
-    wind_peak=numeric(nlines), stringsAsFactors=FALSE)
-
+  # create data frame
   tracks <- data.frame(hur_id=character(nlines), name=character(nlines), date=character(nlines), 
     time=character(nlines), date_time=character(nlines), jd=numeric(nlines), 
     status=character(nlines), latitude=numeric(nlines), longitude=numeric(nlines), 
-    wind_max=numeric(nlines), stringsAsFactors=FALSE)
-
-  colnames(ids) <- c("hur_id", "name", "positions", "wind_peak")
+    wind_max=numeric(nlines))
 
   colnames(tracks) <- c("hur_id", "name", "date", "time", "date_time", "jd", "status", "latitude", 
     "longitude", "wind_max")
 
   # current line number in hurdat
   line_num <- 0
-  # current row number in ids
-  ids_index <- 0
   # current row number in tracks
   tracks_index <- 0
 
@@ -1654,25 +1642,25 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
     # get hurricane id, name, and number of positions
     line_num <- line_num + 1
     row <- strsplit(hurdat[line_num], ",")[[1]] 
-    hur_id <- raster::trim(row[1])
-    name <- raster::trim(row[2])
-    positions <- as.numeric(raster::trim(row[3]))
+    hur_id <- trimws(row[1])
+    name <- trimws(row[2])
+    positions <- as.numeric(trimws(row[3]))
 
     # process observations
     for (i in 1:positions) {
       line_num <- line_num + 1
       row <- strsplit(hurdat[line_num], ",")[[1]]
-      date <- raster::trim(row[1])
-      time <- raster::trim(row[2])
-      status <- raster::trim(row[4])
+      date <- trimws(row[1])
+      time <- trimws(row[2])
+      status <- trimws(row[4])
 
-      lat <- raster::trim(row[5])
+      lat <- trimws(row[5])
       latitude <- as.numeric(substr(lat, 1, nchar(lat)-1))
 
-      lon <- raster::trim(row[6])
+      lon <- trimws(row[6])
       longitude <- -as.numeric(substr(lon, 1, nchar(lon)-1))
 
-      wind_max <- as.numeric(raster::trim(row[7]))
+      wind_max <- as.numeric(trimws(row[7]))
 
       # convert knots to meters per second
       wind_max <- round(0.514444 * wind_max, 1)
@@ -1692,9 +1680,6 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
       tracks[tracks_index, ] <- c(hur_id, name, date, time, date_time, jd, status, latitude, longitude, wind_max)
     }
 
-    ids_index <- ids_index + 1
-    ids[ids_index, ] <- c(hur_id, name, positions, wind_peak)
-
     # report progress
     if (console == TRUE) {
       x <- round(line_num*100/nlines)
@@ -1703,7 +1688,6 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
   }
 
   # remove empty lines
-  ids <- ids[(ids$hur_id != ""), ]
   tracks <- tracks[(tracks$hur_id != ""), ]
 
   # add datetime
@@ -1722,29 +1706,33 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
   tracks[ , c("date", "time", "date2", "hour", "minute")] <- list(NULL)
 
   # save to file
-  write.csv(ids, ids_file, row.names=FALSE)
   write.csv(tracks, track_file, row.names=FALSE)
+
+  # get number of storms
+  ii <- tracks[ , c("hur_id", "name")]
+  ii <- unique(ii)
+  ii_rows <- nrow(ii)
 
   # display number of storms
   if (console == TRUE) {
-    cat("\nNumber of storms =", ids_index, "\n")
+    cat("\nNumber of storms =", ii_rows, "\n")
     cat("Number of observations =", tracks_index)
   }
 }
 
 #' @description
-#' hurrecon_extract_tracks extracts hurricane ids and tracks from the two
-#' files created by hurrecon_reformat_hurdat2 (hurdat2_ids.csv and 
-#' hurdat2_tracks.csv). The geographic window used to select hurricanes is 
-#' set by the land-water file and optionally extended by the margin parameter.
-#' Selection begins by identifying all positions in the window where the storm
-#' has "HU" (hurricane) status in HURDAT2.  If at least one such position exists,
-#' the track is extended to include one position before and one position after
-#' the first and last HU position, if possible. If the resulting track contains 
-#' at least two positions and the maximum sustained wind speed equals or exceeds 
-#' wind_min, the track is included. For included storms, summary data are
-#' written to ids.csv, track data are written to tracks.csv, and track data for
-#' all positions are written to tracks_all.csv.
+#' hurrecon_extract_tracks extracts track data from an input track file
+#' (input_tracks.csv) created from HURDAT2 using hurrecon_reformat_hurdat2
+#' or created from other sources with the same file structure. The geographic 
+#' window used to select hurricanes is set by the land-water file and optionally
+#' extended by the margin parameter. Selection begins by identifying all positions
+#' in the window where winds reach or exceed hurricane speed (33 meters/second). 
+#' If at least one such position exists, the track is extended to include one 
+#' position before and one position after the first and last hurricane position, 
+#' if possible. If the resulting track contains at least two positions and the 
+#' maximum sustained wind speed equals or exceeds wind_min, the track is included.
+#' For included storms, summary data are written to ids.csv, track data are written 
+#' to tracks.csv, and track data for all positions are written to tracks_all.csv.
 #' @param margin an optional extension of the geographic window set by the
 #' land-water file (degrees)
 #' @param wind_min the minimum value of maximum sustained wind speed 
@@ -1763,17 +1751,16 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
   track_file <- paste(cwd, "/input/tracks.csv", sep="")
   track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
 
-  # read hurdat2 ids file
-  hurdat2_ids_file <- paste(cwd, "/input/hurdat2_ids.csv", sep="")
-  check_file_exists(hurdat2_ids_file)
-  ii <- read.csv(hurdat2_ids_file, header=TRUE, stringsAsFactors=FALSE)
-  ii_rows = nrow(ii)
+  # read input tracks file
+  input_track_file <- paste(cwd, "/input/input_tracks.csv", sep="")
+  check_file_exists(input_track_file)
+  tt <- read.csv(input_track_file, header=TRUE)
+  tt_rows <- nrow(tt)
 
-  # read hurdat2 tracks file
-  hurdat2_track_file <- paste(cwd, "/input/hurdat2_tracks.csv", sep="")
-  check_file_exists(hurdat2_track_file)
-  tt <- read.csv(hurdat2_track_file, header=TRUE, stringsAsFactors=FALSE)
-  tt_rows = nrow(tt)
+  # get ids
+  ii <- tt[ , c("hur_id", "name")]
+  ii <- unique(ii)
+  ii_rows <- nrow(ii)
 
   # read land-water file
   land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
@@ -1789,15 +1776,14 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
 
   # create data frames
   ids <- data.frame(hur_id=character(ii_rows), name=character(ii_rows), 
-    positions=numeric(ii_rows), wind_peak=numeric(ii_rows), stringsAsFactors=FALSE)
+    positions=numeric(ii_rows), wind_peak=numeric(ii_rows))
 
   tracks <- data.frame(hur_id=character(tt_rows), name=character(tt_rows), 
     date_time=character(tt_rows), jd=numeric(tt_rows), status=character(tt_rows), 
-    latitude=numeric(tt_rows), longitude=numeric(tt_rows), wind_max=numeric(tt_rows), 
-    stringsAsFactors=FALSE)
+    latitude=numeric(tt_rows), longitude=numeric(tt_rows), wind_max=numeric(tt_rows))
 
   tracks_all <- data.frame(hur_id=character(tt_rows), date_time=character(tt_rows),
-    latitude=numeric(tt_rows), longitude=numeric(tt_rows), stringsAsFactors=FALSE)
+    latitude=numeric(tt_rows), longitude=numeric(tt_rows))
 
   colnames(ids) <- c("hur_id", "name", "positions", "wind_peak")
 
@@ -1817,7 +1803,7 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
     name <- ii[i, "name"]
 
     # check if in window
-    index <- which(tt$hur_id == hur_id & tt$latitude >= lat_min & tt$latitude <= lat_max & tt$longitude >= lon_min & tt$longitude <= lon_max & tt$status == "HU")
+    index <- which(tt$hur_id == hur_id & tt$latitude >= lat_min & tt$latitude <= lat_max & tt$longitude >= lon_min & tt$longitude <= lon_max & tt$wind_max >= 33)
     index_all <- which(tt$hur_id == hur_id)
 
     # get start & end position
@@ -1896,8 +1882,8 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, console=TRUE) {
 #' hurrecon_model_site calculates wind speed (meters/second), gust speed 
 #' (meters/second), wind direction (degrees), and enhanced Fujita scale wind 
 #' damage for a given hurricane and site. If width is TRUE, the radius of 
-#' maximum wind (rmw) and profile exponent (s_par) for this hurricane are
-#' used; otherwise values for ALL are used. If save is TRUE, results are 
+#' maximum wind (rmw) and scaling parameter (s_par) for this hurricane 
+#' are used; otherwise values for ALL are used. If save is TRUE, results are 
 #' saved to a CSV file on the site subdirectory.
 #' @param hur_id hurricane id
 #' @param site_name name of site
@@ -1971,7 +1957,7 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
   ef_vec   <- mm[[4]]
   
   # get standard date & time
-  dt_vec = get_standard_date_time(yr_vec, jd_vec)
+  dt_vec <- get_standard_date_time(yr_vec, jd_vec)
  
   # get constant parameters
   rmw_vec  <- rep(rmw, length=mm_rows)
@@ -2009,8 +1995,8 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
 #' @description
 #' hurrecon_model_site_all creates a table of peak values for all hurricanes
 #' for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
-#' profile exponent (s_par) for the given hurricane are used; otherwise values
-#' for ALL are used. If save is TRUE, results are saved to a CSV file on the 
+#' scaling parameter (s_par) for the given hurricane are used; otherwise values 
+#' for ALL are used. If save is TRUE, results are saved to a CSV file on the
 #' site-all subdirectory.
 #' @param site_name name of site
 #' @param width whether to use width parameters for the specified hurricane
@@ -2030,7 +2016,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
   # read ids file
   ids_file <- paste(cwd, "/input/ids.csv", sep="")
   check_file_exists(ids_file)
-  ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
+  ii <- read.csv(ids_file, header=TRUE)
   names(ii)[1] <- "hur_id"
   ii_rows <- nrow(ii)
 
@@ -2055,7 +2041,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
   # get peak values for each hurricane
   for (i in 1:ii_rows) {
     # get hurricane name
-    hur_id = ii$hur_id[i]
+    hur_id <- ii$hur_id[i]
 
     # get modeled output
     mm <- hurrecon_model_site(hur_id, site_name, width, time_step, save=FALSE, 
@@ -2101,7 +2087,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
   # output
   if (save == TRUE) {
     # save modeled data to CSV file
-    site_peak_file = paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
+    site_peak_file <- paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
     write.csv(peak_values, site_peak_file, quote=FALSE, row.names=FALSE)
 
     if (console == TRUE) {
@@ -2119,7 +2105,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
 #' enhanced Fujita scale, peak wind direction (degrees), peak cardinal wind 
 #' direction, gale wind duration (minutes), and hurricane wind duration (minutes)
 #' for a given hurricane over a region. If width is TRUE, the radius of maximum 
-#' wind (rmw) and profile exponent (s_par) for the given hurricane are used;
+#' wind (rmw) and scaling parameter (s_par) for the given hurricane are used; 
 #' otherwise values for ALL are used. If time_step is NULL, the time step is 
 #' calculated. If water is FALSE, results are calculated for land areas only. 
 #' If save is TRUE, results are saved as a GeoTiff file on the region subdirectory.
@@ -2188,10 +2174,10 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 #' hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
 #' Fujita scale, wind direction (degrees), and cardinal wind direction for a
 #' given hurricane over a region at a specified datetime. If width is
-#' TRUE, the radius of maximum wind (rmw) and profile exponent (s_par) for 
-#' this hurricane are used; otherwise values for ALL are used. If water 
-#' is FALSE, results are calculated for land areas only. If save is TRUE, 
-#' results are saved as a GeoTiff file on the region-dt subdirectory.
+#' TRUE, the radius of maximum wind (rmw) (kilometers) and scaling parameter 
+#' (s_par) for this hurricane are used; otherwise values for ALL are used. 
+#' If water is FALSE, results are calculated for land areas only. If save is 
+#' TRUE, results are saved as a GeoTiff file on the region-dt subdirectory.
 #' @param hur_id hurricane id
 #' @param dt datetime in the format YYYY-MM-DDThh:mm
 #' @param width whether to use width parameters for the specified hurricane
@@ -2222,7 +2208,7 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
   if (save == TRUE) {
     # save modeled values in a Geotiff file
     dt2 <- gsub(":", "", dt)
-    hur_tif_file = paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+    hur_tif_file <- paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
     rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
     raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
     
@@ -2241,13 +2227,13 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 #' peak enhanced Fujita scale, peak wind direction (degrees), peak cardinal 
 #' wind direction, duration of gale winds (minutes), and duration of hurricane
 #' winds (minutes) over a region for all hurricanes. If width is TRUE, the 
-#' radius of maximum wind (rmw) and profile exponent (s_par) for the given 
-#' hurricane are used; otherwise values for ALL are used. If time_step is NULL, 
-#' the time step is calculated. If water is FALSE, results are calculated 
-#' for land areas only. Results for each hurricane are saved in a GeoTiff file
-#' on the region-all subdirectory. Summary results for all hurricanes 
-#' (summary.csv, summary.tif) are also calculated and saved to the region-all 
-#' subdirectory. If returns is TRUE, summary values are returned.
+#' radius of maximum wind (rmw) and scaling parameter (s_par) for the given 
+#' hurricane are used; otherwise values for ALL are used. If time_step is NULL,
+#' the time step is calculated. If water is FALSE, results are calculated for 
+#' land areas only. Results for each hurricane are saved in a GeoTiff file on 
+#' the region-all subdirectory. Summary results for all hurricanes (summary.csv,
+#' summary.tif) are also calculated and saved to the region-all subdirectory. 
+#' If returns is TRUE, summary values are returned.
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
 #' @param water whether to calculate results over water
@@ -2276,7 +2262,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
   # read ids file
   ids_file <- paste(cwd, "/input/ids.csv", sep="")
   check_file_exists(ids_file)
-  ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
+  ii <- read.csv(ids_file, header=TRUE)
   names(ii)[1] <- "hur_id"
   ii_rows <- nrow(ii)
 
@@ -2299,7 +2285,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
       save=FALSE, console=FALSE)
 
     # save modeled values in a Geotiff file
-    hur_tif_file = paste(cwd, "/region-all/", hur_id, ".tif", sep="")
+    hur_tif_file <- paste(cwd, "/region-all/", hur_id, ".tif", sep="")
     rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
     raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
   }
@@ -2405,13 +2391,13 @@ hurrecon_summarize_tracks <- function(console=TRUE) {
   # read ids file
   ids_file <- paste(cwd, "/input/ids.csv", sep="")
   check_file_exists(ids_file)
-  ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
-  ii_rows = nrow(ii)
+  ii <- read.csv(ids_file, header=TRUE)
+  ii_rows <- nrow(ii)
 
-  positions_total = sum(ii$positions)
+  positions_total <- sum(ii$positions)
 
-  wind_peak_min = min(ii$wind_peak)
-  wind_peak_max = max(ii$wind_peak)
+  wind_peak_min <- min(ii$wind_peak)
+  wind_peak_max <- max(ii$wind_peak)
 
   st <- paste("Number of storms = ", ii_rows, "\n", sep="")
   st <- paste(st, "Number of positions = ", positions_total, "\n", sep="")
@@ -2443,7 +2429,7 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
   modeled_name <- paste(hur_id, site_name)
   modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
   check_file_exists(modeled_file)
-  mm <- read.csv(modeled_file, header=TRUE, stringsAsFactors=FALSE)
+  mm <- read.csv(modeled_file, header=TRUE)
 
   # get peak values
   pk <- get_peak_values(hur_id, site_name, mm$date_time, mm$wind_dir, mm$wind_spd, 
@@ -2526,7 +2512,7 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
   # read data
   modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
   check_file_exists(modeled_file)
-  mm <- read.csv(modeled_file, header=TRUE, stringsAsFactors=FALSE)
+  mm <- read.csv(modeled_file, header=TRUE)
   mm_rows <- nrow(mm)
 
   # add datetime
@@ -2717,7 +2703,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
   # read data
   peak_file <- paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
   check_file_exists(peak_file)
-  kk <- read.csv(peak_file, header=TRUE, stringsAsFactors=FALSE)
+  kk <- read.csv(peak_file, header=TRUE)
   kk_rows <- nrow(kk)
 
   # get axis labels
@@ -2842,7 +2828,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE) {
   cwd <- getwd()
  
   # read raster brick file in GeoTiff format
-  hur_tif_file = paste(cwd, "/region/", hur_id, ".tif", sep="")
+  hur_tif_file <- paste(cwd, "/region/", hur_id, ".tif", sep="")
   check_file_exists(hur_tif_file)
   hur_brick <- raster::brick(hur_tif_file)
 
@@ -2862,7 +2848,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE) {
   # get hurricane track
   track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
   check_file_exists(track_all_file)
-  zz <-read.csv(track_all_file, header=TRUE, stringsAsFactors=FALSE)
+  zz <-read.csv(track_all_file, header=TRUE)
   names(zz)[1] <- "hur_id"
   index <- which(zz$hur_id == hur_id)
   tt_all <- zz[index, ]
@@ -2942,7 +2928,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE) {
     if (raster::maxValue(cc_layer) > 0) {
       main_label <- paste(hur_id, "Wind Direction")
       arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
-      cols=rainbow(9)
+      cols <- rainbow(9)
       cols[1] <- "white"
       raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
       raster::plot(boundaries, add=TRUE)
@@ -2998,7 +2984,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
  
   # read raster brick file in GeoTiff format
   dt2 <- gsub(":", "", dt)
-  hur_tif_file = paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+  hur_tif_file <- paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
   check_file_exists(hur_tif_file)
   hur_brick <- raster::brick(hur_tif_file)
 
@@ -3020,7 +3006,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
   # get hurricane track
   track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
   check_file_exists(track_all_file)
-  zz <-read.csv(track_all_file, header=TRUE, stringsAsFactors=FALSE)
+  zz <-read.csv(track_all_file, header=TRUE)
   names(zz)[1] <- "hur_id"
   index <- which(zz$hur_id == hur_id)
   tt_all <- zz[index, ]
@@ -3103,7 +3089,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     if (raster::maxValue(cc_layer) > 0) {
       main_label <- paste(hur_id, "Wind Direction", dt)
       arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
-      cols=rainbow(9)
+      cols <- rainbow(9)
       cols[1] <- "white"
       raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cols)
       raster::plot(boundaries, add=TRUE)
@@ -3134,7 +3120,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
   cwd <- getwd()
  
   # read summary file in GeoTiff format
-  sum_tif_file = paste(cwd, "/region-all/", "summary.tif", sep="")
+  sum_tif_file <- paste(cwd, "/region-all/", "summary.tif", sep="")
   check_file_exists(sum_tif_file)
   sum_brick <- raster::brick(sum_tif_file)
 
@@ -3190,17 +3176,17 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
   if (tracks) {
     ids_file <- paste(cwd, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
-    ii <- read.csv(ids_file, header=TRUE, stringsAsFactors=FALSE)
+    ii <- read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
 
     track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
     check_file_exists(track_all_file)
-    tt_all <- read.csv(track_all_file, header=TRUE, stringsAsFactors=FALSE)
+    tt_all <- read.csv(track_all_file, header=TRUE)
     names(tt_all)[1] <- "hur_id"
 
     summary_file <- paste(cwd, "/region-all/summary.csv", sep="")
     check_file_exists(summary_file)
-    kk <- read.csv(summary_file, header=TRUE, stringsAsFactors=FALSE)
+    kk <- read.csv(summary_file, header=TRUE)
     names(kk)[1] <- "hur_id"
   }
   
@@ -3218,7 +3204,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           fuj_min <- 0
           xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="brown")
+            lines(xx$longitude, xx$latitude, col="grey")
           }
         }
       }
@@ -3234,7 +3220,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           fuj_min <- 0
           xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="brown")
+            lines(xx$longitude, xx$latitude, col="grey")
           }         
         }
       }
@@ -3250,7 +3236,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           fuj_min <- 1
           xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="brown")
+            lines(xx$longitude, xx$latitude, col="grey")
           }         
         }
       }
@@ -3266,7 +3252,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           fuj_min <- 2
           xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="brown")
+            lines(xx$longitude, xx$latitude, col="grey")
           }         
         }
       }
@@ -3282,7 +3268,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           fuj_min <- 3
           xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="brown")
+            lines(xx$longitude, xx$latitude, col="grey")
           }         
         }
       }
@@ -3298,7 +3284,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           fuj_min <- 4
           xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="brown")
+            lines(xx$longitude, xx$latitude, col="grey")
           }         
         }
       }
@@ -3314,7 +3300,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE) {
           fuj_min <- 5
           xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
           if (!is.null(xx)) {
-            lines(xx$longitude, xx$latitude, col="brown")
+            lines(xx$longitude, xx$latitude, col="grey")
           }         
         }
       }

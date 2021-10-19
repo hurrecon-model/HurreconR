@@ -1,7 +1,7 @@
 Package: HurreconR
 Title: Models hurricane wind speed, wind direction, and wind damage
-Version: 1.0
-Date: 2020-08-24
+Version: 1.01
+Date: 2021-10-19
 Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
                       email = "boose@fas.harvard.edu"),
               person("President and Fellows of Harvard College", role = "cph"))
@@ -9,7 +9,7 @@ Description: Models hurricane wind speed, wind direction, enhanced Fujita
 	scale wind damage, duration of gale winds, and duration of hurricane winds
 	at a single site or over a region. Hurricane track and intensity data may
 	be imported directly from the US National Hurricane Center's HURDAT2 database.
-Depends: R (>= 3.6.1)
+Depends: R (>= 4.0.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -18,4 +18,4 @@ Imports:
     rgdal
 URL: https://github.com/hurrecon-model/HurreconR
 BugReports: https://github.com/hurrecon-model/hurreconR/issues
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.2
