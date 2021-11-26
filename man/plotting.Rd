@@ -25,11 +25,22 @@ hurrecon_plot_site_all(
   var = "wind_speed"
 )
 
-hurrecon_plot_region(hur_id, var = "fujita_scale", positions = FALSE)
+hurrecon_plot_region(
+  hur_id,
+  var = "fujita_scale",
+  positions = FALSE,
+  colormap = "default"
+)
 
-hurrecon_plot_region_dt(hur_id, dt, var = "fujita_scale", positions = FALSE)
+hurrecon_plot_region_dt(
+  hur_id,
+  dt,
+  var = "fujita_scale",
+  positions = FALSE,
+  colormap = "default"
+)
 
-hurrecon_plot_region_all(var = "efmax", tracks = FALSE)
+hurrecon_plot_region_all(var = "efmax", tracks = FALSE, colormap = "default")
 }
 \arguments{
 \item{hur_id}{hurricane id}
@@ -54,6 +65,8 @@ greater than 180 degrees in scatter plot}
 \item{var}{variable to plot}
 
 \item{positions}{whether to plot original positions}
+
+\item{colormap}{color palette}
 
 \item{dt}{datetime in the format YYYY-MM-DDThh:mm}
 
