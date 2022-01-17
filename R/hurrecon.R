@@ -19,7 +19,7 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# November 2021
+# January 2022
 
 # R version 4.1.1
 
@@ -2960,9 +2960,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
   
     if (var == "fujita_scale") {
         if (raster::maxValue(ff_layer) > 0) {
-            main_label <- paste(hur_id, "Fujita Scale")
+            main_label <- paste(hur_id, "Peak Fujita Scale")
             arg <- list(at=ff_vals, labels=ff_labs)
-            raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cmap)
+            raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, 
+                legend.args=list(text='  EF Scale', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -2974,8 +2975,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
 
     } else if (var == "wind_speed") {
         if (raster::maxValue(ss_layer) > 0) {
-            main_label <- paste(hur_id, "Wind Speed (m/s)")
-            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label, col=cmap)
+            main_label <- paste(hur_id, "Peak Wind Speed")
+            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label, 
+                legend.args=list(text='  m/sec', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -2987,8 +2989,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
 
     } else if (var == "wind_direction") {
         if (raster::maxValue(dd_layer) > 0) {
-            main_label <- paste(hur_id, "Wind Direction (deg)")
-            raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label, col=cmap)
+            main_label <- paste(hur_id, "Peak Wind Direction")
+            raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label, 
+                legend.args=list(text='  degrees', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3000,9 +3003,10 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
     
     } else if (var == "wind_compass") {
         if (raster::maxValue(cc_layer) > 0) {
-            main_label <- paste(hur_id, "Wind Direction")
+            main_label <- paste(hur_id, "Peak Wind Direction")
             arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
-            raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cmap)
+            raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, 
+                legend.args=list(text='  direction', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3014,8 +3018,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
 
     } else if (var == "gale_duration") {
         if (raster::maxValue(gg_layer) > 0) {
-            main_label <- paste(hur_id, "Gale Winds (min)")
-            raster::plot(gg_layer, xlab=xlab, ylab=ylab, main=main_label, col=cmap)
+            main_label <- paste(hur_id, "Gale Winds")
+            raster::plot(gg_layer, xlab=xlab, ylab=ylab, main=main_label, 
+                legend.args=list(text='  minutes', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3027,8 +3032,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
 
     } else if (var == "hurricane_duration") {
         if (raster::maxValue(hh_layer) > 0) {
-            main_label <- paste(hur_id, "Hurricane Winds (min)")
-            raster::plot(hh_layer, xlab=xlab, ylab=ylab, main=main_label, col=cmap)
+            main_label <- paste(hur_id, "Hurricane Winds")
+            raster::plot(hh_layer, xlab=xlab, ylab=ylab, main=main_label, 
+                legend.args=list(text='  minutes', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3154,7 +3160,8 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
         if (raster::maxValue(ff_layer) > 0) {
             main_label <- paste(hur_id, "Fujita Scale", dt)
             arg <- list(at=ff_vals, labels=ff_labs)
-            raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cmap)
+            raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, 
+                legend.args=list(text='  EF Scale', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3167,8 +3174,9 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
 
     } else if (var == "wind_speed") {
         if (raster::maxValue(ss_layer) > 0) {
-            main_label <- paste(hur_id, "Wind Speed (m/s)", dt)
-            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label, col=cmap)
+            main_label <- paste(hur_id, "Wind Speed", dt)
+            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_label, 
+                legend.args=list(text='  m/sec', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3181,8 +3189,9 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
 
     } else if (var == "wind_direction") {
         if (raster::maxValue(dd_layer) > 0) {
-            main_label <- paste(hur_id, "Wind Direction (deg)", dt)
-            raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label, col=cmap)
+            main_label <- paste(hur_id, "Wind Direction", dt)
+            raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_label, 
+                legend.args=list(text='  degrees', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3197,7 +3206,8 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
         if (raster::maxValue(cc_layer) > 0) {
             main_label <- paste(hur_id, "Wind Direction", dt)
             arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
-            raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, col=cmap)
+            raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_label, axis.args=arg, 
+                legend.args=list(text='  direction', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
@@ -3322,7 +3332,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, colormap="defaul
     if (var == "efmax") {
         if (raster::maxValue(efm_layer) > 0) {
             arg <- list(at=efm_vals, labels=efm_labs)
-            raster::plot(efm_layer, xlab=xlab, ylab=ylab, main="Maximum Fujita Scale", axis.args=arg, col=cmap)
+            raster::plot(efm_layer, xlab=xlab, ylab=ylab, main="Peak Fujita Scale", axis.args=arg, 
+                legend.args=list(text='  EF Scale', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
@@ -3340,7 +3351,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, colormap="defaul
 
     } else if (var == "ef0") {
         if (raster::maxValue(ef0_layer) > 0) {
-            raster::plot(ef0_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 0 (storms)", col=cmap)
+            raster::plot(ef0_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 0", 
+                legend.args=list(text='  storms', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
@@ -3358,7 +3370,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, colormap="defaul
   
     } else if (var == "ef1") {
         if (raster::maxValue(ef1_layer) > 0) {
-            raster::plot(ef1_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 1 (storms)", col=cmap)
+            raster::plot(ef1_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 1", 
+                legend.args=list(text='  storms', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
@@ -3376,7 +3389,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, colormap="defaul
 
     } else if (var == "ef2") {
         if (raster::maxValue(ef2_layer) > 0) {
-            raster::plot(ef2_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 2 (storms)", col=cmap)
+            raster::plot(ef2_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 2", 
+                legend.args=list(text='  storms', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
@@ -3394,7 +3408,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, colormap="defaul
      
     } else if (var == "ef3") {
         if (raster::maxValue(ef3_layer) > 0) {
-            raster::plot(ef3_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 3 (storms)", col=cmap)
+            raster::plot(ef3_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 3", 
+                legend.args=list(text='  storms', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
@@ -3412,7 +3427,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, colormap="defaul
 
     } else if (var == "ef4") {
         if (raster::maxValue(ef4_layer) > 0) {
-            raster::plot(ef4_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 4 (storms)", col=cmap)
+            raster::plot(ef4_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 4", 
+                legend.args=list(text='  storms', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
@@ -3430,7 +3446,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, colormap="defaul
 
     } else if (var == "ef5") {
         if (raster::maxValue(ef5_layer) > 0) {
-            raster::plot(ef5_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 5 (storms)", col=cmap)
+            raster::plot(ef5_layer, xlab=xlab, ylab=ylab, main="Fujita Scale 5", 
+                legend.args=list(text='  storms', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
