@@ -15,14 +15,16 @@ hurrecon_plot_site(
   end_datetime = "",
   xvar = "datetime",
   yvar = "wind_speed",
-  adjust = FALSE
+  adjust = FALSE,
+  legend_loc = "topright"
 )
 
 hurrecon_plot_site_all(
   site_name,
   start_year = "",
   end_year = "",
-  var = "wind_speed"
+  var = "wind_speed",
+  legend_loc = "topright"
 )
 
 hurrecon_plot_region(
@@ -57,6 +59,8 @@ hurrecon_plot_region_all(var = "efmax", tracks = FALSE, colormap = "default")
 
 \item{adjust}{whether to subtract 360 degrees from wind directions
 greater than 180 degrees in scatter plot}
+
+\item{legend_loc}{legend location}
 
 \item{start_year}{optional start year}
 

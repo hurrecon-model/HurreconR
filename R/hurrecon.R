@@ -142,6 +142,17 @@ check_file_exists <- function(file_name) {
     }
 }
 
+#' check_legend_location checks if the specified legend location is valid.
+#' @param loc legend location
+#' @return TRUE or FALSE
+#' @noRd
+
+check_legend_location <- function(loc) {
+    locations <- c("topleft", "topright", "bottomleft", "bottomright")
+
+    return (is.element(loc, locations))
+}
+
 #' read_site_file reads a site file and returns a vector containing the
 #' latitude (degrees), longitude (degrees), and cover type (water=1, land=2)
 #' for the specified site.
@@ -2522,13 +2533,15 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 #' @param yvar independent variable
 #' @param adjust whether to subtract 360 degrees from wind directions
 #' greater than 180 degrees in scatter plot
+#' @param legend_loc legend location
 #' @return no return value
 #' @export
 #' @examples
 #' @rdname plotting
 
 hurrecon_plot_site <- function(hur_id, site_name, start_datetime='', 
-    end_datetime='', xvar="datetime", yvar="wind_speed", adjust=FALSE) {
+    end_datetime='', xvar="datetime", yvar="wind_speed", adjust=FALSE,
+    legend_loc="topright") {
 
     # get current working directory
     cwd <- getwd()
@@ -2554,6 +2567,11 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
     ef4_col <- ef_col[[5]]
     ef5_col <- ef_col[[6]]
   
+    # check legend location
+    if (!check_legend_location(legend_loc)) {
+        legend_loc <- "topright"
+    }
+
     # read data
     modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
     check_file_exists(modeled_file)
@@ -2702,7 +2720,7 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
         cols <- append(cols, ef5_col)
     }
 
-    legend("topright", NULL, labs, cols, cex=0.7)
+    legend(legend_loc, NULL, labs, cols, cex=0.7)
 }
 
 #' @description
@@ -2714,12 +2732,13 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
 #' @param start_year optional start year
 #' @param end_year optional end year
 #' @param var variable to plot
+#' @param legend_loc legend location
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_site_all <- function(site_name, start_year='', end_year='', 
-    var="wind_speed") {
+    var="wind_speed", legend_loc="topright") {
 
     # get current working directory
     cwd <- getwd()
@@ -2744,6 +2763,11 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
     ef3_col <- ef_col[[4]]
     ef4_col <- ef_col[[5]]
     ef5_col <- ef_col[[6]]
+
+    # check legend location
+    if (!check_legend_location(legend_loc)) {
+        legend_loc <- "topright"
+    }
 
     # read data
     peak_file <- paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
@@ -2852,7 +2876,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
         cols <- append(cols, ef5_col)
     }
 
-    legend("bottomleft", NULL, labs, cols, cex=0.7)
+    legend(legend_loc, NULL, labs, cols, cex=0.7)
 }
 
 #' @description
