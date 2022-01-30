@@ -13,7 +13,12 @@ hurrecon_create_land_water(nrows, ncols, xmn, xmx, ymn, ymx, console = TRUE)
 
 hurrecon_reformat_hurdat2(hurdat2_file, path = NULL, console = TRUE)
 
-hurrecon_extract_tracks(margin = 0, wind_min = 33, console = TRUE)
+hurrecon_extract_tracks(
+  margin = 0,
+  wind_min = 33,
+  status = TRUE,
+  console = TRUE
+)
 }
 \arguments{
 \item{hur_path}{path for current model runs}
@@ -41,6 +46,8 @@ land-water file (degrees)}
 
 \item{wind_min}{the minimum value of maximum sustained wind speed 
 (meters/second)}
+
+\item{status}{whether to limit search to storms with hurricane status}
 }
 \value{
 no return value

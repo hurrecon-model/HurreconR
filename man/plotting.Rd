@@ -3,6 +3,7 @@
 \name{hurrecon_plot_site}
 \alias{hurrecon_plot_site}
 \alias{hurrecon_plot_site_all}
+\alias{hurrecon_plot_tracks}
 \alias{hurrecon_plot_region}
 \alias{hurrecon_plot_region_dt}
 \alias{hurrecon_plot_region_all}
@@ -16,7 +17,8 @@ hurrecon_plot_site(
   xvar = "datetime",
   yvar = "wind_speed",
   adjust = FALSE,
-  legend_loc = "topright"
+  legend_loc = "topright",
+  main_title = ""
 )
 
 hurrecon_plot_site_all(
@@ -24,13 +26,17 @@ hurrecon_plot_site_all(
   start_year = "",
   end_year = "",
   var = "wind_speed",
-  legend_loc = "topright"
+  legend_loc = "topright",
+  main_title = ""
 )
+
+hurrecon_plot_tracks(select = "all", main_title = "", colormap = "default")
 
 hurrecon_plot_region(
   hur_id,
   var = "fujita_scale",
   positions = FALSE,
+  main_title = "",
   colormap = "default"
 )
 
@@ -39,10 +45,16 @@ hurrecon_plot_region_dt(
   dt,
   var = "fujita_scale",
   positions = FALSE,
+  main_title = "",
   colormap = "default"
 )
 
-hurrecon_plot_region_all(var = "efmax", tracks = FALSE, colormap = "default")
+hurrecon_plot_region_all(
+  var = "efmax",
+  tracks = FALSE,
+  main_title = "",
+  colormap = "default"
+)
 }
 \arguments{
 \item{hur_id}{hurricane id}
@@ -62,21 +74,28 @@ greater than 180 degrees in scatter plot}
 
 \item{legend_loc}{legend location}
 
+\item{main_title}{optional title}
+
 \item{start_year}{optional start year}
 
 \item{end_year}{optional end year}
 
 \item{var}{variable to plot}
 
-\item{positions}{whether to plot original positions}
+\item{select}{show all positions (all), only positions used as
+model input (model), or none (none)}
 
 \item{colormap}{color palette}
+
+\item{positions}{whether to plot original positions}
 
 \item{dt}{datetime in the format YYYY-MM-DDThh:mm}
 
 \item{tracks}{whether to also plot hurricane tracks}
 }
 \value{
+no return value
+
 no return value
 
 no return value
@@ -99,6 +118,9 @@ hurrecon_plot_site_all creates a time-series plot of peak values
 for all hurricanes for a given site. Optional start and end years
 may be specified. Variables to plot: wind_speed, gust_speed, or
 wind_direction.
+
+hurrecon_plot_tracks creates a regional plot of the land-water file
+and selected hurricane tracks.
 
 hurrecon_plot_region creates regional plots of peak enhanced Fujita
 scale, peak wind speed, peak wind direction, peak cardinal wind direction,
