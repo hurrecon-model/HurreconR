@@ -19,7 +19,7 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# January 2022
+# February 2022
 
 # R version 4.1.1
 
@@ -2898,13 +2898,15 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 #' and selected hurricane tracks.
 #' @param select show all positions (all), only positions used as
 #' model input (model), or none (none)
+#' @param wind_min the minimum value of maximum sustained wind speed 
+#' (meters/second)
 #' @param main_title optional title
 #' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-hurrecon_plot_tracks <- function(select="all", main_title="", 
+hurrecon_plot_tracks <- function(select="all", wind_min=33, main_title="", 
     colormap="default") {
     
     # get current working directory
@@ -2949,7 +2951,7 @@ hurrecon_plot_tracks <- function(select="all", main_title="",
     ylab <- "Latitude (degrees)"
     
     if (main_title == "") {
-        main_title <- "Hurricane Tracks"
+        main_title <- paste("Hurricane Tracks (", wind_min, " m/s)", sep="")
     }
 
     # create plot
@@ -2965,16 +2967,20 @@ hurrecon_plot_tracks <- function(select="all", main_title="",
 
     if (select == "all") {
         for (i in 1:nrow(ii)) {
-            hur_id <- ii[i, "hur_id"]
-            xx <- tt_all[tt_all$hur_id == hur_id, ]
-            lines(xx$longitude, xx$latitude, col="grey")
+            if (ii$wind_peak[i] >= wind_min) {
+                hur_id <- ii[i, "hur_id"]
+                xx <- tt_all[tt_all$hur_id == hur_id, ]
+                lines(xx$longitude, xx$latitude, col="grey")
+            }
         }
     
     } else if (select == "model"){
         for (i in 1:nrow(ii)) {
-            hur_id <- ii[i, "hur_id"]
-            xx <- tt[tt$hur_id == hur_id, ]
-            lines(xx$longitude, xx$latitude, col="grey")
+            if (ii$wind_peak[i] >= wind_min) {
+                hur_id <- ii[i, "hur_id"]
+                xx <- tt[tt$hur_id == hur_id, ]
+                lines(xx$longitude, xx$latitude, col="grey")
+            }
         }
     }
 }

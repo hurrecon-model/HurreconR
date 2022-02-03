@@ -30,7 +30,12 @@ hurrecon_plot_site_all(
   main_title = ""
 )
 
-hurrecon_plot_tracks(select = "all", main_title = "", colormap = "default")
+hurrecon_plot_tracks(
+  select = "all",
+  wind_min = 33,
+  main_title = "",
+  colormap = "default"
+)
 
 hurrecon_plot_region(
   hur_id,
@@ -84,6 +89,9 @@ greater than 180 degrees in scatter plot}
 
 \item{select}{show all positions (all), only positions used as
 model input (model), or none (none)}
+
+\item{wind_min}{the minimum value of maximum sustained wind speed 
+(meters/second)}
 
 \item{colormap}{color palette}
 
