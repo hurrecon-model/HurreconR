@@ -911,10 +911,10 @@ get_peak_values <- function(hur_id, site_name, dt_vec, wdir_vec, wspd_vec,
     return(kk)
 }
 
-#' get_regional_peak_wind calculates the peak wind speed (meters/second), enhanced 
-#' Fujita scale, wind direction (degrees), cardinal wind direction (1-8), gale wind 
-#' duration (minutes), and hurricane wind duration (minutes) for a given hurricane 
-#' over a region. Results are returned in a raster brick with 6 layers.
+#' get_regional_peak_wind calculates peak values for wind speed (meters/second), 
+#' enhanced Fujita scale, wind direction (degrees), cardinal wind direction (1-8),
+#' and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds (minutes) for a given 
+#  hurricane over a region. Results are returned in a raster brick.
 #' @param hur_id hurricane id
 #' @param lat_vec vector of hurricane latitudes (degrees)
 #' @param lon_vec vector of hurricane longitudes (degrees)
@@ -957,8 +957,13 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
     ff <- matrix(0, nrows, ncols)  # enhanced Fujita scale
     dd <- matrix(0, nrows, ncols)  # wind direction (degrees)
     cc <- matrix(0, nrows, ncols)  # cardinal wind direction (1-8)
-    gg <- matrix(0, nrows, ncols)  # duration of gale force winds (minutes)
-    hh <- matrix(0, nrows, ncols)  # duration of hurricane winds (minutes)
+    f0 <- matrix(0, nrows, ncols)  # duration of EF0 winds (minutes)
+    f1 <- matrix(0, nrows, ncols)  # duration of EF1 winds (minutes)
+    f2 <- matrix(0, nrows, ncols)  # duration of EF2 winds (minutes)
+    f3 <- matrix(0, nrows, ncols)  # duration of EF3 winds (minutes)
+    f4 <- matrix(0, nrows, ncols)  # duration of EF4 winds (minutes)
+    f5 <- matrix(0, nrows, ncols)  # duration of EF5 winds (minutes)
+
     xx <- matrix(0, nrows, ncols)  # floating point wind speed (m/s)
 
     # create matrix from raster
@@ -1022,12 +1027,28 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 
                         # update values if gale or higher
                         if (wspd >= 17.5) {
-                            # update duration of gale force winds (minutes)
-                            gg[(nrows-i+1), j] <- gg[(nrows-i+1), j] + time_step
- 
-                            # update duration of hurricane winds (minutes)
-                            if (wspd >= 33) {
-                                hh[(nrows-i+1), j] <- hh[(nrows-i+1), j] + time_step
+                            # enhanced Fujita scale
+                            gspd <- calculate_wind_gust(wspd, gust_factor)
+                            fsca <- calculate_enhanced_fujita_scale(gspd)
+
+                            # update duration (minutes)
+                            if (fsca >= 0) {
+                                f0[(nrows-i+1), j] <- f0[(nrows-i+1), j] + time_step
+                            }
+                            if (fsca >= 1) {
+                                f1[(nrows-i+1), j] <- f1[(nrows-i+1), j] + time_step
+                            }
+                            if (fsca >= 2) {
+                                f2[(nrows-i+1), j] <- f2[(nrows-i+1), j] + time_step
+                            }
+                            if (fsca >= 3) {
+                                f3[(nrows-i+1), j] <- f3[(nrows-i+1), j] + time_step
+                            }
+                            if (fsca >= 4) {
+                                f4[(nrows-i+1), j] <- f4[(nrows-i+1), j] + time_step
+                            }
+                            if (fsca >= 5) {
+                                f5[(nrows-i+1), j] <- f5[(nrows-i+1), j] + time_step
                             }
 
                             # update peak peak_values
@@ -1102,14 +1123,27 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
     cc_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
         ymn=lat_min, ymx=lat_max, vals=cc)
 
-    gg_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=gg)
+    f0_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+        ymn=lat_min, ymx=lat_max, vals=f0)
 
-    hh_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=hh)
+    f1_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+        ymn=lat_min, ymx=lat_max, vals=f1)
+
+    f2_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+        ymn=lat_min, ymx=lat_max, vals=f2)
+
+    f3_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+        ymn=lat_min, ymx=lat_max, vals=f3)
+
+    f4_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+        ymn=lat_min, ymx=lat_max, vals=f4)
+
+    f5_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
+        ymn=lat_min, ymx=lat_max, vals=f5)
 
     # create raster brick
-    hur_brick <- raster::brick(ss_raster, ff_raster, dd_raster, cc_raster, gg_raster, hh_raster)
+    hur_brick <- raster::brick(ss_raster, ff_raster, dd_raster, cc_raster, f0_raster, 
+        f1_raster, f2_raster, f3_raster, f4_raster, f5_raster)
 
     # report elapsed time
     if (console == TRUE) {
@@ -2155,7 +2189,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
 #' @description
 #' hurrecon_model_region calculates peak wind speed (meters/second), peak 
 #' enhanced Fujita scale, peak wind direction (degrees), peak cardinal wind 
-#' direction, gale wind duration (minutes), and hurricane wind duration (minutes)
+#' direction, and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds (minutes)
 #' for a given hurricane over a region. If width is TRUE, the radius of maximum 
 #' wind (rmw) and scaling parameter (s_par) for the given hurricane are used; 
 #' otherwise values for ALL are used. If time_step is NULL, the time step is 
@@ -2986,11 +3020,12 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, main_title="",
 }
 
 #' @description
-#' hurrecon_plot_region creates regional plots of peak enhanced Fujita
-#' scale, peak wind speed, peak wind direction, peak cardinal wind direction,
-#' gale wind duration, and hurricane wind duration for a given hurricane. 
+#' hurrecon_plot_region creates regional plots of peak wind speed, peak 
+#' enhanced Fujita scale, peak wind direction, peak cardinal wind direction,
+#' and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds for a given hurricane.
 #' Variables to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
-#' gale_duration, or hurricane_duration.
+#' ef0_duration, ef1_duration, ef2_duration, ef3_duration, ef4_duration,
+#' and ef5_duration.
 #' @param hur_id hurricane id
 #' @param var variable to plot
 #' @param positions whether to plot original positions
@@ -3016,8 +3051,12 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
     ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
     dd_layer <- raster::subset(hur_brick, 3)  # wind direction (degrees)
     cc_layer <- raster::subset(hur_brick, 4)  # cardinal wind direction (1-8)
-    gg_layer <- raster::subset(hur_brick, 5)  # duration of gale force winds (hours)
-    hh_layer <- raster::subset(hur_brick, 6)  # duration of hurricane winds (hours)
+    f0_layer <- raster::subset(hur_brick, 5)  # duration of EF0 winds (minutes)
+    f1_layer <- raster::subset(hur_brick, 6)  # duration of EF1 winds (minutes)
+    f2_layer <- raster::subset(hur_brick, 7)  # duration of EF2 winds (minutes)
+    f3_layer <- raster::subset(hur_brick, 8)  # duration of EF3 winds (minutes)
+    f4_layer <- raster::subset(hur_brick, 9)  # duration of EF4 winds (minutes)
+    f5_layer <- raster::subset(hur_brick, 10) # duration of EF5 winds (minutes)
 
     # get vector boundary file
     boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
@@ -3089,7 +3128,22 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
     # create plot
     par(mar=c(5.1, 4.6, 4.1, 2.1))
   
-    if (var == "fujita_scale") {
+    if (var == "wind_speed") {
+        if (raster::maxValue(ss_layer) > 0) {
+            if (main_title == "") {
+                main_title <- paste(hur_id, "Peak Wind Speed")
+            }
+            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, 
+                legend.args=list(text='  m/sec', line=1), col=cmap)
+            raster::plot(boundaries, add=TRUE)
+            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            if (positions == TRUE) {
+                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+            }
+        } else {
+            message("No wind speed")   
+        }
+    } else if (var == "fujita_scale") {
         if (raster::maxValue(ff_layer) > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Peak Fujita Scale")
@@ -3106,21 +3160,6 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
             message("No Fujita values")
         }
 
-    } else if (var == "wind_speed") {
-        if (raster::maxValue(ss_layer) > 0) {
-            if (main_title == "") {
-                main_title <- paste(hur_id, "Peak Wind Speed")
-            }
-            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  m/sec', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
-            if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
-            }
-        } else {
-            message("No wind speed")   
-        }
 
     } else if (var == "wind_direction") {
         if (raster::maxValue(dd_layer) > 0) {
@@ -3155,40 +3194,111 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
             message("No wind compass")
         }
 
-    } else if (var == "gale_duration") {
-        if (raster::maxValue(gg_layer) > 0) {
+    } else if (var == "ef0_duration") {
+        if (raster::maxValue(f0_layer) > 0) {
+            f0_layer <- f0_layer/60
             if (main_title == "") {
-                main_title <- paste(hur_id, "Gale Winds")
+                main_title <- paste(hur_id, "EF0 Winds")
             }
-            raster::plot(gg_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  minutes', line=1), col=cmap)
+            raster::plot(f0_layer, xlab=xlab, ylab=ylab, main=main_title, 
+                legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
-            message("No gale winds")
+            message("No EF0 winds")
         }
 
-    } else if (var == "hurricane_duration") {
-        if (raster::maxValue(hh_layer) > 0) {
+    } else if (var == "ef1_duration") {
+        if (raster::maxValue(f1_layer) > 0) {
+            f1_layer <- f1_layer/60
             if (main_title == "") {
-                main_title <- paste(hur_id, "Hurricane Winds")
+                main_title <- paste(hur_id, "EF1 Winds")
             }
-            raster::plot(hh_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  minutes', line=1), col=cmap)
+            raster::plot(f1_layer, xlab=xlab, ylab=ylab, main=main_title, 
+                legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
             lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
-            message("No hurricane winds")
+            message("No EF1 winds")
+        }
+
+    } else if (var == "ef2_duration") {
+        if (raster::maxValue(f2_layer) > 0) {
+            f2_layer <- f2_layer/60
+            if (main_title == "") {
+                main_title <- paste(hur_id, "EF2 Winds")
+            }
+            raster::plot(f2_layer, xlab=xlab, ylab=ylab, main=main_title, 
+                legend.args=list(text='  hours', line=1), col=cmap)
+            raster::plot(boundaries, add=TRUE)
+            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            if (positions == TRUE) {
+                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+            }
+        } else {
+            message("No EF2 winds")
+        }
+
+    } else if (var == "ef3_duration") {
+        if (raster::maxValue(f3_layer) > 0) {
+            f3_layer <- f3_layer/60
+            if (main_title == "") {
+                main_title <- paste(hur_id, "EF3 Winds")
+            }
+            raster::plot(f3_layer, xlab=xlab, ylab=ylab, main=main_title, 
+                legend.args=list(text='  hours', line=1), col=cmap)
+            raster::plot(boundaries, add=TRUE)
+            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            if (positions == TRUE) {
+                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+            }
+        } else {
+            message("No EF3 winds")
+        }
+
+    } else if (var == "ef4_duration") {
+        if (raster::maxValue(f4_layer) > 0) {
+            f4_layer <- f4_layer/60
+            if (main_title == "") {
+                main_title <- paste(hur_id, "EF4 Winds")
+            }
+            raster::plot(f4_layer, xlab=xlab, ylab=ylab, main=main_title, 
+                legend.args=list(text='  hours', line=1), col=cmap)
+            raster::plot(boundaries, add=TRUE)
+            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            if (positions == TRUE) {
+                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+            }
+        } else {
+            message("No EF4 winds")
+        }
+
+    } else if (var == "ef5_duration") {
+        if (raster::maxValue(f5_layer) > 0) {
+            f5_layer <- f5_layer/60
+            if (main_title == "") {
+                main_title <- paste(hur_id, "EF5 Winds")
+            }
+            raster::plot(f5_layer, xlab=xlab, ylab=ylab, main=main_title, 
+                legend.args=list(text='  hours', line=1), col=cmap)
+            raster::plot(boundaries, add=TRUE)
+            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            if (positions == TRUE) {
+                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+            }
+        } else {
+            message("No EF5 winds")
         }
 
     } else {
-        stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, gale_duration, or hurricane_duration")
+        stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, ef0_duration, 
+            ef1_duration, ef2_duration, ef3_duration, ef4_duration, or ef5_duration")
     }
 }
 

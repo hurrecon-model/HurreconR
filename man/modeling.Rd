@@ -98,7 +98,7 @@ site-all subdirectory.
 
 hurrecon_model_region calculates peak wind speed (meters/second), peak 
 enhanced Fujita scale, peak wind direction (degrees), peak cardinal wind 
-direction, gale wind duration (minutes), and hurricane wind duration (minutes)
+direction, and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds (minutes)
 for a given hurricane over a region. If width is TRUE, the radius of maximum 
 wind (rmw) and scaling parameter (s_par) for the given hurricane are used; 
 otherwise values for ALL are used. If time_step is NULL, the time step is 

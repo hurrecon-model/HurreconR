@@ -130,11 +130,12 @@ wind_direction.
 hurrecon_plot_tracks creates a regional plot of the land-water file
 and selected hurricane tracks.
 
-hurrecon_plot_region creates regional plots of peak enhanced Fujita
-scale, peak wind speed, peak wind direction, peak cardinal wind direction,
-gale wind duration, and hurricane wind duration for a given hurricane. 
+hurrecon_plot_region creates regional plots of peak wind speed, peak 
+enhanced Fujita scale, peak wind direction, peak cardinal wind direction,
+and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds for a given hurricane.
 Variables to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
-gale_duration, or hurricane_duration.
+ef0_duration, ef1_duration, ef2_duration, ef3_duration, ef4_duration,
+and ef5_duration.
 
 hurrecon_plot_region_dt creates regional plots of enhanced Fujita scale, 
 wind speed, wind direction, and cardinal wind direction for a given hurricane
