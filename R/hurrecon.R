@@ -19,7 +19,7 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# February 2022
+# March 2022
 
 # R version 4.1.1
 
@@ -1083,7 +1083,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
             cover_type <- land_water_matrix[nrows-i+1, j]
 
             if (cover_type == 2 || water == TRUE) {
-                wspd <- ss[(nrows-i+1), j]
+                wspd <- xx[(nrows-i+1), j]
 
                 # update values if gale or higher
                 if (wspd >= 17.5) {
