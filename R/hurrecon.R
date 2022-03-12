@@ -2574,7 +2574,7 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 #' @param adjust whether to subtract 360 degrees from wind directions
 #' greater than 180 degrees in scatter plot
 #' @param legend_loc legend location
-#' @param main_title optional title
+#' @param title optional title
 #' @return no return value
 #' @export
 #' @examples
@@ -2582,7 +2582,7 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 
 hurrecon_plot_site <- function(hur_id, site_name, start_datetime='', 
     end_datetime='', xvar="datetime", yvar="wind_speed", adjust=FALSE,
-    legend_loc="topright", main_title="") {
+    legend_loc="topright", title="") {
 
     # get current working directory
     cwd <- getwd()
@@ -2709,6 +2709,8 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
     gust_max <- max(mm_plot$gust_spd)
 
     # get title
+    main_title <- title
+
     if (main_title == "") {
         main_title <- paste(hur_id, site_name)
     }
@@ -2777,13 +2779,13 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
 #' @param end_year optional end year
 #' @param var variable to plot
 #' @param legend_loc legend location
-#' @param main_title optional title
+#' @param title optional title
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_site_all <- function(site_name, start_year='', end_year='', 
-    var="wind_speed", legend_loc="topright", main_title="") {
+    var="wind_speed", legend_loc="topright", title="") {
 
     # get current working directory
     cwd <- getwd()
@@ -2877,6 +2879,8 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
     gust_max <- max(kk_plot$gust_spd)
 
     # get title
+    main_title <- title
+
     if (main_title == "") {
         main_title <- site_name
     }
@@ -2934,13 +2938,13 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 #' model input (model), or none (none)
 #' @param wind_min the minimum value of maximum sustained wind speed 
 #' (meters/second)
-#' @param main_title optional title
+#' @param title optional title
 #' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-hurrecon_plot_tracks <- function(select="all", wind_min=33, main_title="", 
+hurrecon_plot_tracks <- function(select="all", wind_min=33, title="", 
     colormap="default") {
     
     # get current working directory
@@ -2984,6 +2988,8 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, main_title="",
     xlab <- "Longitude (degrees)"
     ylab <- "Latitude (degrees)"
     
+    main_title <- title
+
     if (main_title == "") {
         main_title <- paste("Hurricane Tracks (", wind_min, " m/s)", sep="")
     }
@@ -3029,14 +3035,14 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, main_title="",
 #' @param hur_id hurricane id
 #' @param var variable to plot
 #' @param positions whether to plot original positions
-#' @param main_title optional title
+#' @param title optional title
 #' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE, 
-    main_title="", colormap="default") {
+    title="", colormap="default") {
   
     # get current working directory
     cwd <- getwd()
@@ -3124,6 +3130,8 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
     # set titles
     xlab <- "Longitude (degrees)"
     ylab <- "Latitude (degrees)"
+
+    main_title <- title
 
     # create plot
     par(mar=c(5.1, 4.6, 4.1, 2.1))
@@ -3311,14 +3319,14 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE,
 #' @param dt datetime in the format YYYY-MM-DDThh:mm
 #' @param var variable to plot
 #' @param positions whether to plot original positions
-#' @param main_title optional title
+#' @param title optional title
 #' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FALSE,
-    main_title="", colormap="default") {
+    title="", colormap="default") {
 
     # get current working directory
     cwd <- getwd()
@@ -3407,6 +3415,8 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     xlab <- "Longitude (degrees)"
     ylab <- "Latitude (degrees)"
 
+    main_title <- title
+
     # create plot
     par(mar=c(5.1, 4.6, 4.1, 2.1))
   
@@ -3491,13 +3501,13 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
 #' Variables to plot: efmax, ef0, ef1, ef2, ef3, ef4, or ef5.
 #' @param var variable to plot
 #' @param tracks whether to also plot hurricane tracks
-#' @param main_title optional title
+#' @param title optional title
 #' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, main_title="",
+hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     colormap="default") {
     
     # get current working directory
@@ -3572,6 +3582,8 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, main_title="",
     # set titles
     xlab <- "Longitude (degrees)"
     ylab <- "Latitude (degrees)"
+
+    main_title <- title
 
     # get hurricane tracks
     if (tracks) {
