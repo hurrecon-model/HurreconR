@@ -3034,6 +3034,7 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 #' and ef5_duration.
 #' @param hur_id hurricane id
 #' @param var variable to plot
+#' @param region_all whether to plot results from hurrecon_model_region_all
 #' @param positions whether to plot original positions
 #' @param title optional title
 #' @param colormap color palette
@@ -3041,14 +3042,21 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 #' @export
 #' @rdname plotting
 
-hurrecon_plot_region <- function(hur_id, var="fujita_scale", positions=FALSE, 
-    title="", colormap="default") {
+hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
+    positions=FALSE, title="", colormap="default") {
   
     # get current working directory
     cwd <- getwd()
  
+    # get subdirectory
+    if (region_all == TRUE) {
+        subdir <- "region-all"
+    } else {
+        subdir <- "region"
+    }
+
     # read raster brick file in GeoTiff format
-    hur_tif_file <- paste(cwd, "/region/", hur_id, ".tif", sep="")
+    hur_tif_file <- paste(cwd, "/", subdir, "/", hur_id, ".tif", sep="")
     check_file_exists(hur_tif_file)
     hur_brick <- raster::brick(hur_tif_file)
 

@@ -40,6 +40,7 @@ hurrecon_plot_tracks(
 hurrecon_plot_region(
   hur_id,
   var = "fujita_scale",
+  region_all = FALSE,
   positions = FALSE,
   title = "",
   colormap = "default"
@@ -94,6 +95,8 @@ model input (model), or none (none)}
 (meters/second)}
 
 \item{colormap}{color palette}
+
+\item{region_all}{whether to plot results from hurrecon_model_region_all}
 
 \item{positions}{whether to plot original positions}
 
