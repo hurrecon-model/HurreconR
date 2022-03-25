@@ -74,7 +74,8 @@ hurrecon_reformat_hurdat2 reformats a HURDAT2 file from the National
 Hurricane Center for use with the HURRECON model. The input file is assumed
 to be in space-delimited text format. The output file (hurdat2_tracks.csv)
 contains full track information for each hurricane plus columns for standard 
-datetime and Julian day with fraction.
+datetime and Julian day with fraction. Hurricane IDs are reformatted to
+facilitate sorting by year.
 
 hurrecon_extract_tracks extracts track data from an input track file
 (input_tracks.csv) created from HURDAT2 using hurrecon_reformat_hurdat2

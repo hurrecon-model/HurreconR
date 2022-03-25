@@ -95,6 +95,22 @@ get_fujita_colors <- function() {
     return(c(ef0_col, ef1_col, ef2_col, ef3_col, ef4_col, ef5_col, efx_col))
 }
 
+#' get_hur_id reformats a hurricane ID from HURDAT2 in a form that facilitates
+#' sorting by year. For example: AL061938 is reformatted as AL1938-06.
+#' @param hd2_id hurricane ID from HURDAT2
+#' @return a reformated hurricane ID
+#' @noRd
+
+get_hur_id <- function(hd2_id) {
+    basin <- substr(hd2_id, 1, 2)
+    num   <- substr(hd2_id, 3, 4)
+    year  <- substr(hd2_id, 5,8)
+
+    hur_id <- paste(basin, year, '-', num, sep="")
+    
+    return(hur_id)
+}
+
 #' format_time_difference_hms returns a time difference formatted as
 #' hours:minutes:seconds.
 #' @param start_time start time
@@ -1669,7 +1685,8 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 #' Hurricane Center for use with the HURRECON model. The input file is assumed
 #' to be in space-delimited text format. The output file (hurdat2_tracks.csv)
 #' contains full track information for each hurricane plus columns for standard 
-#' datetime and Julian day with fraction.
+#' datetime and Julian day with fraction. Hurricane IDs are reformatted to
+#' facilitate sorting by year.
 #' @param hurdat2_file name of HURDAT2 file
 #' @param path optional path for input & output files
 #' @param console whether to display messages in console
@@ -1715,7 +1732,7 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
         # get hurricane id, name, and number of positions
         line_num <- line_num + 1
         row <- strsplit(hurdat[line_num], ",")[[1]] 
-        hur_id <- trimws(row[1])
+        hur_id <- get_hur_id(trimws(row[1]))
         name <- trimws(row[2])
         positions <- as.numeric(trimws(row[3]))
 
