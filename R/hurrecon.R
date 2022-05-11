@@ -19,7 +19,7 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# March 2022
+# May 2022
 
 # R version 4.1.1
 
@@ -104,7 +104,7 @@ get_fujita_colors <- function() {
 get_hur_id <- function(hd2_id) {
     basin <- substr(hd2_id, 1, 2)
     num   <- substr(hd2_id, 3, 4)
-    year  <- substr(hd2_id, 5,8)
+    year  <- substr(hd2_id, 5, 8)
 
     hur_id <- paste(basin, year, '-', num, sep="")
     
@@ -1286,7 +1286,9 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
         # report progress
         if (console == TRUE) {
             x <- round(i*100/nrows)
-            if (x %% 10 == 0) cat("\r", x, "%")
+            if (x %% 10 == 0) {
+                cat("\r", x, "%")
+            }
         }
     }
   
@@ -1615,7 +1617,7 @@ hurrecon_set_path <- function(hur_path, console=TRUE) {
     setwd(hur_path)
 
     if (console == TRUE) {
-        cat("Path set to", hur_path)
+        cat("Path set to", hur_path, "\n")
     }
 }
 
@@ -1676,7 +1678,7 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 
     if (console == TRUE) {
         cat("Cell height =", round(cell_height) , "kilometers\n")
-        cat("Cell width  =", round(cell_width), "kilometers")
+        cat("Cell width  =", round(cell_width), "kilometers\n")
     }
 }
 
@@ -1810,7 +1812,7 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
     # display number of storms
     if (console == TRUE) {
         cat("\nNumber of storms =", ii_rows, "\n")
-        cat("Number of observations =", tracks_index)
+        cat("Number of observations =", tracks_index, "\n")
     }
 }
 
@@ -1971,7 +1973,7 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=
     # display number of storms
     if (console == TRUE) {
         cat("\nNumber of storms =", nrow(ids), "\n")
-        cat("Number of observations =", nrow(tracks))
+        cat("Number of observations =", nrow(tracks), "\n")
     }
 }
 
@@ -2085,7 +2087,7 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
         write.csv(mm, modeled_file, quote=FALSE, row.names=FALSE)
     
         if (console == TRUE) {
-            cat("Saving to", modeled_file)
+            cat("Saving to", modeled_file, "\n")
         }
   
     }
@@ -2195,7 +2197,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
         write.csv(peak_values, site_peak_file, quote=FALSE, row.names=FALSE)
 
         if (console == TRUE) {
-            cat("Saving to", site_peak_file)
+            cat("Saving to", site_peak_file, "\n")
         }
     }
   
@@ -2264,7 +2266,7 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
         raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
     
         if (console == TRUE) {
-             cat("Saving to", hur_tif_file)
+             cat("Saving to", hur_tif_file, "\n")
         }
     }
   
@@ -2315,7 +2317,7 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
         raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
     
         if (console == TRUE) {
-            cat("Saving to", hur_tif_file)
+            cat("Saving to", hur_tif_file, "\n")
         }
     }
   
@@ -2411,7 +2413,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
     # display where results are saved
     if (console == TRUE) {
         reg_all_dir <- paste(cwd, "/region-all/", sep="")
-        cat("Saving to", reg_all_dir)
+        cat("Saving to", reg_all_dir, "\n")
     }
 
     # return a list of summary results
@@ -2536,7 +2538,7 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
     pk <- get_peak_values(hur_id, site_name, mm$date_time, mm$wind_dir, mm$wind_spd, 
         mm$gust_spd, mm$ef_sca)
 
-    # print peak values
+    # display peak values
 
     st <- paste(modeled_name, "\n", sep="")
     st <- paste(st, "PEAK: ", as.character(pk$dt[1]), "\n", sep="")
