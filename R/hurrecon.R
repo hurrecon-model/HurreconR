@@ -1642,6 +1642,11 @@ hurrecon_set_path <- function(hur_path, console=TRUE) {
 #' @rdname utility
 
 hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Creating land-water ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
 
@@ -1697,6 +1702,11 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 #' @rdname utility
 
 hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Reformatting Hurdat2 ...\n")
+    }
+
     # output files
     track_file <- "hurdat2_tracks.csv"
 
@@ -1840,6 +1850,11 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
 #' @rdname utility
 
 hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Extracting tracks ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
 
@@ -2003,6 +2018,11 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=
 hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, 
     save=TRUE, console=TRUE) { 
 
+    # announcement
+    if (console == TRUE) {
+        cat("... Modeling site ...\n")
+    }
+
     # record total elapsed time
     start_time <- Sys.time()
 
@@ -2113,6 +2133,11 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
 
 hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, 
     save=TRUE, console=TRUE) {
+
+    # announcement
+    if (console == TRUE) {
+        cat("... Modeling site all ...\n")
+    }
 
     # get current working directory
     cwd <- getwd()
@@ -2227,6 +2252,11 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
 hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FALSE, 
     save=TRUE, console=TRUE) {
 
+    # announcement
+    if (console == TRUE) {
+        cat("... Modeling region ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
  
@@ -2295,6 +2325,11 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE, 
     save=TRUE, console=TRUE) {
 
+    # announcement
+    if (console == TRUE) {
+        cat("... Modeling region dt ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
  
@@ -2350,6 +2385,11 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE, 
     console=TRUE, returns=FALSE) {
   
+    # announcement
+    if (console == TRUE) {
+        cat("... Modeling region all ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
 
@@ -2437,6 +2477,11 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
 #' @rdname summarizing
 
 hurrecon_summarize_land_water <- function(console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Summarizing land-water ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
 
@@ -2488,6 +2533,11 @@ hurrecon_summarize_land_water <- function(console=TRUE) {
 #' @rdname summarizing
 
 hurrecon_summarize_tracks <- function(console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Summarizing tracks ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
 
@@ -2525,6 +2575,11 @@ hurrecon_summarize_tracks <- function(console=TRUE) {
 #' @rdname summarizing
 
 hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Summarizing site ...\n")
+    }
+    
     # get current working directory
     cwd <- getwd()
 
@@ -2594,6 +2649,7 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 #' greater than 180 degrees in scatter plot
 #' @param legend_loc legend location
 #' @param title optional title
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @examples
@@ -2601,7 +2657,12 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 
 hurrecon_plot_site <- function(hur_id, site_name, start_datetime='', 
     end_datetime='', xvar="datetime", yvar="wind_speed", adjust=FALSE,
-    legend_loc="topright", title="") {
+    legend_loc="topright", title="", console=TRUE) {
+
+    # announcement
+    if (console == TRUE) {
+        cat("... Plotting site ...\n")
+    }
 
     # get current working directory
     cwd <- getwd()
@@ -2799,12 +2860,18 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
 #' @param var variable to plot
 #' @param legend_loc legend location
 #' @param title optional title
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_site_all <- function(site_name, start_year='', end_year='', 
-    var="wind_speed", legend_loc="topright", title="") {
+    var="wind_speed", legend_loc="topright", title="", console=TRUE) {
+
+    # announcement
+    if (console == TRUE) {
+        cat("... Plotting site all ...\n")
+    }
 
     # get current working directory
     cwd <- getwd()
@@ -2959,13 +3026,19 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 #' (meters/second)
 #' @param title optional title
 #' @param colormap color palette
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_tracks <- function(select="all", wind_min=33, title="", 
-    colormap="default") {
+    colormap="default", console=TRUE) {
     
+    # announcement
+    if (console == TRUE) {
+        cat("... Plotting tracks ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
 
@@ -3057,13 +3130,19 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 #' @param positions whether to plot original positions
 #' @param title optional title
 #' @param colormap color palette
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
-    positions=FALSE, title="", colormap="default") {
+    positions=FALSE, title="", colormap="default", console=TRUE) {
   
+    # announcement
+    if (console == TRUE) {
+        cat("... Plotting region ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
  
@@ -3348,12 +3427,18 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
 #' @param positions whether to plot original positions
 #' @param title optional title
 #' @param colormap color palette
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FALSE,
-    title="", colormap="default") {
+    title="", colormap="default", console=TRUE) {
+
+    # announcement
+    if (console == TRUE) {
+        cat("... Plotting region dt ...\n")
+    }
 
     # get current working directory
     cwd <- getwd()
@@ -3530,13 +3615,19 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
 #' @param tracks whether to also plot hurricane tracks
 #' @param title optional title
 #' @param colormap color palette
+#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
-    colormap="default") {
+    colormap="default", console=TRUE) {
     
+    # announcement
+    if (console == TRUE) {
+        cat("... Plotting region all ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
  

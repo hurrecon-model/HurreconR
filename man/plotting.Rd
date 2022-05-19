@@ -18,7 +18,8 @@ hurrecon_plot_site(
   yvar = "wind_speed",
   adjust = FALSE,
   legend_loc = "topright",
-  title = ""
+  title = "",
+  console = TRUE
 )
 
 hurrecon_plot_site_all(
@@ -27,14 +28,16 @@ hurrecon_plot_site_all(
   end_year = "",
   var = "wind_speed",
   legend_loc = "topright",
-  title = ""
+  title = "",
+  console = TRUE
 )
 
 hurrecon_plot_tracks(
   select = "all",
   wind_min = 33,
   title = "",
-  colormap = "default"
+  colormap = "default",
+  console = TRUE
 )
 
 hurrecon_plot_region(
@@ -43,7 +46,8 @@ hurrecon_plot_region(
   region_all = FALSE,
   positions = FALSE,
   title = "",
-  colormap = "default"
+  colormap = "default",
+  console = TRUE
 )
 
 hurrecon_plot_region_dt(
@@ -52,14 +56,16 @@ hurrecon_plot_region_dt(
   var = "fujita_scale",
   positions = FALSE,
   title = "",
-  colormap = "default"
+  colormap = "default",
+  console = TRUE
 )
 
 hurrecon_plot_region_all(
   var = "efmax",
   tracks = FALSE,
   title = "",
-  colormap = "default"
+  colormap = "default",
+  console = TRUE
 )
 }
 \arguments{
@@ -81,6 +87,8 @@ greater than 180 degrees in scatter plot}
 \item{legend_loc}{legend location}
 
 \item{title}{optional title}
+
+\item{console}{whether to display messages in console}
 
 \item{start_year}{optional start year}
 
