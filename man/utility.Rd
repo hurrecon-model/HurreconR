@@ -2,12 +2,15 @@
 % Please edit documentation in R/hurrecon.R
 \name{hurrecon_set_path}
 \alias{hurrecon_set_path}
+\alias{hurrecon_get_path}
 \alias{hurrecon_create_land_water}
 \alias{hurrecon_reformat_hurdat2}
 \alias{hurrecon_extract_tracks}
 \title{Utility Functions}
 \usage{
 hurrecon_set_path(hur_path, console = TRUE)
+
+hurrecon_get_path(console = TRUE)
 
 hurrecon_create_land_water(nrows, ncols, xmn, xmx, ymn, ymx, console = TRUE)
 
@@ -21,7 +24,7 @@ hurrecon_extract_tracks(
 )
 }
 \arguments{
-\item{hur_path}{path for current model runs}
+\item{hur_path}{path for current set of model runs}
 
 \item{console}{whether to display messages in console}
 
@@ -52,6 +55,8 @@ land-water file (degrees)}
 \value{
 no return value
 
+current path
+
 no return value
 
 no return value
@@ -59,7 +64,9 @@ no return value
 no return value
 }
 \description{
-set_path sets the path for the current set of model runs.
+hurrecon_set_path sets the path for the current set of model runs.
+
+hurrecon_get_path returns the current path for a set of model runs.
 
 hurrecon_create_land_water creates a land-water raster file in GeoTiff 
 format from boundary files in shapefile format. The land-water file

@@ -19,13 +19,14 @@ Here are the basic steps for using the model. Please see below for more details.
 1. Download the R or Python version of the model from GitHub.
 2. Create a directory for a set of related model runs with subdirectories for input 
 and output files (as described below).
-3. Create a site file (sites.csv) with geographic coordinates for one or more study sites.
+3. Create a site file (<i>sites.csv</i>) with geographic coordinates for one or more 
+study sites.
 4. Download geographic and political boundary shapefiles for the desired geographic region.
 Rename these files so the first name of each file is "boundaries".
-5. Create a land-water file (land-water.tif) for the region.
-6. Create a parameter file (parameters.csv) with parameters for all hurricanes and
+5. Create a land-water file (<i>land-water.tif</i>) for the region.
+6. Create a parameter file (<i>parameters.csv</i>) with parameters for all hurricanes and
 (optionally) for particular hurricanes.
-7. Create an input hurricane track file (input_tracks.csv) for the desired geographic 
+7. Create an input hurricane track file (<i>input_tracks.csv</i>) for the desired geographic 
 region. If desired, this file can be created directly from HURDAT2.
 8. Run the model to create site and regional estimates. Use the plot functions to 
 view model results.
@@ -45,17 +46,17 @@ speed - meters/second
 time - minutes or hours
 ```
 
-The user specifies a directory (hur_dir) for a given set of model runs. Input
+The user specifies a path (<i>hur_path</i>) for a given set of model runs. Input
 and output files are stored on the following subdirectories of this directory:
 
 ```{r}
-hur_dir/input
-hur_dir/region
-hur_dir/region-dt
-hur_dir/region-all
-hur_dir/site
-hur_dir/site-all
-hur_dir/vector
+hur_path/input
+hur_path/region
+hur_path/region-dt
+hur_path/region-all
+hur_path/site
+hur_path/site-all
+hur_path/vector
 ```
 
 The input subdirectory contains input files. The site and region subdirectories
@@ -76,7 +77,8 @@ input_tracks.csv
 All input files (except boundary files) are located on the input subdirectory.
 
 The sites file contains the name, location, and cover type (water = 1, land = 2)
-of each study site. Variables: site_name, latitude, longitude, cover_type.
+of each study site. Variables: <i>site_name</i>, <i>latitude</i>, <i>longitude</i>, 
+<i>cover_type</i>.
 
 The boundary files are vector shapefiles that are used for creating maps of regional
 results. These files are located on the vector subdirectory.
@@ -88,28 +90,31 @@ geographic window and spatial resolution for regional modeling.
 
 The parameters file contains model parameters (radius of maximum winds and scaling
 parameter) for all hurricanes and (optionally) for individual hurricanes. Variables:
-hur_id, rmw, s_par. This file must contain at least one record (hur_id = ALL) that 
-specifies the default values of rmw and s_par. Values typically range from 20 to 
-100 km for rmw and from 1.2 to 1.5 for s_par, depending on the region.
+<i>hur_id</i>, <i>rmw</i>, <i>s_par</i>. This file must contain at least one record 
+(<i>hur_id</i> = ALL) that specifies the default values of <i>rmw</i> and <i>s_par</i>. 
+Values typically range from 20 to 100 km for <i>rmw</i> and from 1.2 to 1.5 for <i>s_par</i>, 
+depending on the region.
 
 The input tracks file contains location and maximum wind speed for each position of
-each hurricane for a given set of model runs. Variables: hur_id, name, date_time, 
-jd, status, latitude, longitude, wind_max.
+each hurricane for a given set of model runs. Variables: <i>hur_id</i>, <i>name</i>, 
+<i>date_time</i>, <i>jd</i>, <i>status</i>, <i>latitude</i>, <i>longitude</i>, 
+<i>wind_max</i>.
 
-The input tracks file may be created directly from HURDAT2. Use the hurrecon_reformat_hurdat2
-function to reformat a HUTDAT2 file as hurdat2_tracks.csv, rename this file to 
-input_tracks.csv, and copy this file to the input directory.
+The input tracks file may be created directly from HURDAT2. Use the 
+<i>hurrecon_reformat_hurdat2</i> function to reformat a HUTDAT2 file as 
+<i>hurdat2_tracks.csv</i>, rename this file to <i>input_tracks.csv</i>, and copy this 
+file to the input directory.
 
 The hurrecon_extract_tracks function is used to extract the data needed for a 
 particular set of model runs. This function uses the input tracks file and the 
-land-water file to create input files (ids.csv, tracks.csv, tracks-all.csv) 
-required for the hurrecon_model functions.
+land-water file to create input files (<i>ids.csv</i>, <i>tracks.csv</i>, 
+<i>tracks-all.csv</i>) required for the hurrecon_model functions.
 
-Examples of input files may be found on the inst/extdata subdirectory (R) or data
-subdirectory (Python).
+Examples of input files may be found on the <i>inst/extdata</i> subdirectory (R) or 
+<i>data</i> subdirectory (Python).
 
 To run the model, create the above directories, copy the input files to their
-respective subdirectories, and run hurrecon.R (R) or hurrecon.py (Python). 
+respective subdirectories, and run <i>hurrecon.R</i> (R) or <i>hurrecon.py</i> (Python). 
 
 The R version may also be installed as an R package using the devtools package:
 
@@ -126,6 +131,7 @@ function.
 hurrecon_reformat_hurdat2
 
 hurrecon_set_path
+hurrecon_get_path
 
 hurrecon_create_land_water
 hurrecon_extract_tracks
@@ -148,25 +154,26 @@ hurrecon_plot_region_dt
 hurrecon_plot_region_all
 ```
 
-The hurrecon_reformat_hurdat2 function reformats data from HURDAT2 
+The <i>hurrecon_reformat_hurdat2</i> function reformats data from HURDAT2 
 for use with HURRECON. This is normally a one-time operation for a
 given version of HURDAT2. Hurricane IDs in HURDAT2 are reformatted 
 to facilitate sorting by year (e.g. AL031935 becomes AL1935-03).
 
-The hurrecon_set_path function sets the current working directory to 
-the desired directory for the current set of model runs.
+The <i>hurrecon_set_path</i> function sets the path for the current set of 
+model runs. The <i>hurrecon_get_path</i> function returns the current path. 
+Use <i>hurrecon_set_path</i> before using other functions.
 
-The hurrecon_create_land_water function creates a land-water raster file
+The <i>hurrecon_create_land_water</i> function creates a land-water raster file
 in GeoTiff format using the specified minimum & maximum latitude & longitude,
 the number of rows & columns, and vector boundary files in shapefile 
 format used to set the cover type of each cell. The land-water file is used
 by other functions to get the spatial parameters required for regional 
-modeling.  The hurrecon_extract_tracks function extracts data from an input 
+modeling.  The <i>hurrecon_extract_tracks</i> function extracts data from an input 
 tracks file (which may be derived from HURDAT2) for use with a particular 
 land-water file. Optional parameters may be used to broaden the geographic area
 or adjust the minimum hurricane intensity when selecting hurricane tracks.
 
-The hurrecon_model functions generate output for a single hurricane and a 
+The <i>hurrecon_model</i> functions generate output for a single hurricane and a 
 single site (all datetimes), all hurricanes for a single site (peak values), 
 a single hurricane for a specified geographic region (peak values or specified
 datetime), and all hurricanes for a specified geographic region (peak values).
@@ -177,15 +184,15 @@ results is calculated as the time required to traverse one cell in the
 vertical direction at 20 meters per second, rounded to one of these values:
 1, 2, 3, 5, 10, 15, 30, or 60 minutes.
 
-The hurrecon_summarize_land_water function displays information about the current
+The <i>hurrecon_summarize_land_water</i> function displays information about the current
 land-water file. The hurrecon_summarize_tracks function displays information about
 the current track files. The hurrecon_summarize_site function displays peak values 
 for a single hurricane and a single site.
 
-The hurrecon_plot_site functions create time-series and scatter plots for a single 
+The <i>hurrecon_plot_site</i> functions create time-series and scatter plots for a single 
 hurricane and time-series plots for all hurricanes for a given site. The 
-hurrecon_plot_tracks function creates a map of the land-water file with selected 
-hurricane tracks. The hurrecon_plot_region functions create maps of regional results 
+<i>hurrecon_plot_tracks</i> function creates a map of the land-water file with selected 
+hurricane tracks. The <i>hurrecon_plot_region</i> functions create maps of regional results 
 for a single hurricane or for all hurricanes.
 
 ## Examples
@@ -197,6 +204,7 @@ hurrecon_reformat_hurdat2(hurdat2_file="hurdat2-1851-2020-020922.txt")
 [copy hurdat2_tracks.csv to input_tracks.cvs on input directory]
 
 hurrecon_set_path("c:/hurrecon/r/east_30km")
+hurrecon_get_path()
 
 hurrecon_create_land_water(nrows=100, ncols=120, xmn=-100, xmx=-59, ymn=23, ymx=50)
 hurrecon_extract_tracks(wind_min=70)

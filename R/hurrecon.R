@@ -19,9 +19,9 @@
 # of hurricane location and maximum wind speed.
 
 # Emery R. Boose
-# May 2022
+# June 2022
 
-# R version 4.1.1
+# R version 4.2.0
 
 # Required packages:
 #  raster
@@ -29,6 +29,27 @@
 
 
 ### INTERNAL FUNCTIONS ####################################
+
+# create environment to store path
+
+hur_env <- new.env(parent=emptyenv())
+
+#' get_path returns the path for the current set of model runs.
+#' If not set, a message is displayed.
+#' @return current path
+#' @noRd
+
+get_path <- function() {
+    # display message if not set
+    if (!exists("hur_path", envir=hur_env)) {
+        stop("Path not set. Please use hurrecon_set_path.", call. = FALSE)
+
+    # otherwise return current path
+    } else {
+        hur_path <- hur_env[["hur_path"]]
+        invisible(hur_path)
+    }
+}
 
 #' get_operating_system returns the current operating system type
 #' (windows, osx, unix, linux, or unknown).
@@ -154,7 +175,7 @@ format_time_difference_ms <- function(start_time, end_time) {
 
 check_file_exists <- function(file_name) {
     if (file.exists(file_name) == FALSE) {  
-        stop("File not found: ", file_name)
+        stop("File not found: ", file_name, call. = FALSE)
     }
 }
 
@@ -177,8 +198,11 @@ check_legend_location <- function(loc) {
 #' @noRd
 
 read_site_file <- function(site_name) {
-    cwd <- getwd()
-    site_file <- paste(cwd, "/input/sites.csv", sep="")
+    # get path
+    hur_path <- get_path()
+
+    # read site file
+    site_file <- paste(hur_path, "/input/sites.csv", sep="")
     check_file_exists(site_file)
     ss <- read.csv(site_file)
     names(ss)[1] <- "site_name"
@@ -187,7 +211,7 @@ read_site_file <- function(site_name) {
     index <- which(ss$site_name == site_name)
 
     if (length(index) == 0) {   
-        stop("Site not found")
+        stop("Site not found", call. = FALSE)
     }
 
     i <- min(index)
@@ -208,8 +232,11 @@ read_site_file <- function(site_name) {
 #' @noRd
 
 read_parameter_file <- function(hur_id, width) {
-    cwd <- getwd()
-    par_file <- paste(cwd, "/input/parameters.csv", sep="")
+    # get path
+    hur_path <- get_path()
+
+    # read parameter file
+    par_file <- paste(hur_path, "/input/parameters.csv", sep="")
     check_file_exists(par_file)
     pp <- read.csv(par_file)
     names(pp)[1] <- "hur_id"
@@ -218,13 +245,13 @@ read_parameter_file <- function(hur_id, width) {
     if (width == TRUE) {
         index <- which(pp$hur_id == hur_id)
         if (length(index) == 0) {
-        stop("Parameters not found for: ", hur_id)  
+        stop("Parameters not found for: ", hur_id, call. = FALSE)  
     } 
 
     } else {
         index <- which(pp$hur_id == "ALL")
         if (length(index) == 0) {
-            stop("Parameter file must contain an entry for ALL")    
+            stop("Parameter file must contain an entry for ALL", call. = FALSE)    
         }
     }
 
@@ -257,7 +284,7 @@ get_fixed_model_parameters <- function(cover_type) {
         gust_factor <- 1.5
 
     } else {
-        stop("Cover type must be 1 (water) or 2 (land)")
+        stop("Cover type must be 1 (water) or 2 (land)", call. = FALSE)
     }
 
     return(c(asymmetry_factor, inflow_angle, friction_factor, gust_factor))
@@ -271,9 +298,11 @@ get_fixed_model_parameters <- function(cover_type) {
 #' @noRd
 
 get_time_step <- function() {
+    # get path
+    hur_path <- get_path()
+
     # read land-water file
-    cwd <- getwd()
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
     land_water <- raster::raster(land_water_file)
 
@@ -314,9 +343,12 @@ get_time_step <- function() {
 #' @noRd
 
 read_hurricane_track_file <- function(hur_id) {
+    # get path
+    hur_path <- get_path()
+
     # read hurricane track file
-    cwd <- getwd()
-    track_file <- paste(cwd, "/input/tracks.csv", sep="")
+    read_hurricane_track_file
+    track_file <- paste(hur_path, "/input/tracks.csv", sep="")
     check_file_exists(track_file)
     zz <-read.csv(track_file, header=TRUE)
     names(zz)[1] <- "hur_id"
@@ -325,7 +357,7 @@ read_hurricane_track_file <- function(hur_id) {
     tt <- zz[(zz$hur_id == hur_id), ]
 
     if (nrow(tt) == 0) {
-        stop("Hurricane not in track file")
+        stop("Hurricane not in track file", call. = FALSE)
     }
 
     return(tt)
@@ -514,9 +546,11 @@ calculate_bearing <- function(lat1, lon1, lat2, lon2) {
 #' @noRd
 
 get_maximum_wind_speed <- function(hur_id) {
+    # get path
+    hur_path <- get_path()
+
     # read hurricane track file
-    cwd <- getwd()
-    track_file <- paste(cwd, "/input/tracks.csv", sep="")
+    track_file <- paste(hur_path, "/input/tracks.csv", sep="")
     check_file_exists(track_file)
     zz <-read.csv(track_file, header=TRUE)
     names(zz)[1] <- "hur_id"
@@ -947,12 +981,14 @@ get_peak_values <- function(hur_id, site_name, dt_vec, wdir_vec, wspd_vec,
 get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec, 
     spd_vec, width, time_step, water, console) {
   
+    # get path
+    hur_path <- get_path()
+
     # get number of rows
     num <- length(lat_vec)
 
     # read land-water file
-    cwd <- getwd()
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
     land_water <- raster::raster(land_water_file)
 
@@ -1189,9 +1225,11 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width, 
     water, console) {
   
+    # get path
+    hur_path <- get_path()
+
     # read land-water file
-    cwd <- getwd()
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
     land_water <- raster::raster(land_water_file)
 
@@ -1358,11 +1396,11 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
 #' @noRd
 
 get_regional_summary_csv <- function() {
-    # get current working directory
-    cwd <- getwd()
+    # get path
+    hur_path <- get_path()
 
     # read ids file
-    ids_file <- paste(cwd, "/input/ids.csv", sep="")
+    ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
     ii <- read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
@@ -1377,7 +1415,7 @@ get_regional_summary_csv <- function() {
         hur_id <- ii$hur_id[i]
 
         # read regional hurricane file in GeoTiff format
-        hur_brick_file <- paste(cwd, "/region-all/", hur_id, ".tif", sep="")
+        hur_brick_file <- paste(hur_path, "/region-all/", hur_id, ".tif", sep="")
         check_file_exists(hur_brick_file)
         hur_brick <- raster::brick(hur_brick_file)
 
@@ -1399,18 +1437,18 @@ get_regional_summary_csv <- function() {
 #' @noRd
 
 get_regional_summary_tif <- function() {
-    # get current working directory
-    cwd <- getwd()
+    # get path
+    hur_path <- get_path()
 
     # read ids file
-    ids_file <- paste(cwd, "/input/ids.csv", sep="")
+    ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
     ii <- read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
     ii_rows <- nrow(ii)
 
     # read land-water file
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
     land_water <- raster::raster(land_water_file)
     land_water_matrix <- raster::as.matrix(land_water)
@@ -1440,7 +1478,7 @@ get_regional_summary_tif <- function() {
         hur_id <- ii$hur_id[i]
 
         # read regional hurricane file in GeoTiff format
-        hur_brick_file <- paste(cwd, "/region-all/", hur_id, ".tif", sep="")
+        hur_brick_file <- paste(hur_path, "/region-all/", hur_id, ".tif", sep="")
         check_file_exists(hur_brick_file)
         hur_brick <- raster::brick(hur_brick_file)
 
@@ -1547,7 +1585,7 @@ get_values_at_datetime <- function(hur_id, tt, dt) {
   
     # abort if no match
     if (length(index) == 0) {
-        stop("Datetime not found")
+        stop("Datetime not found", call. = FALSE)
     }
 
     # interpolate hurricane speed & bearing
@@ -1598,8 +1636,8 @@ get_track_lat_lon <- function(hur_id, fuj_min, tt, kk) {
 #' @title
 #' Utility Functions
 #' @description
-#' set_path sets the path for the current set of model runs.
-#' @param hur_path path for current model runs
+#' hurrecon_set_path sets the path for the current set of model runs.
+#' @param hur_path path for current set of model runs
 #' @param console whether to display messages in console
 #' @return no return value
 #' @export
@@ -1608,17 +1646,44 @@ get_track_lat_lon <- function(hur_id, fuj_min, tt, kk) {
 
 hurrecon_set_path <- function(hur_path, console=TRUE) {
     if (hur_path == "") {
-        stop("Need to enter a path")
+        stop("Need to enter a path", call. = FALSE)
 
     } else if (dir.exists(hur_path) == FALSE) {
-        stop("Path does not exist")
+        stop("Path does not exist", call. = FALSE)
     }
 
-    setwd(hur_path)
+    hur_env[["hur_path"]] <- hur_path
 
     if (console == TRUE) {
         cat("Path set to", hur_path, "\n")
     }
+}
+
+#' @description
+#' hurrecon_get_path returns the current path for a set of model runs.
+#' @param console whether to display messages in console
+#' @return current path
+#' @export
+#' @examples
+#' @rdname utility
+
+hurrecon_get_path <- function(console=TRUE) {
+    if (exists("hur_path", envir=hur_env)) {
+        hur_path <- hur_env[["hur_path"]]
+
+        if (console == TRUE) {
+            cat(hur_path, "\n")
+        }
+
+        invisible(hur_path)
+
+    } else {
+        if (console == TRUE) {
+            cat("Path not set\n")
+        }
+
+        invisible(NULL)
+    }        
 }
 
 #' @description
@@ -1642,26 +1707,26 @@ hurrecon_set_path <- function(hur_path, console=TRUE) {
 #' @rdname utility
 
 hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console=TRUE) {
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Creating land-water ...\n")
     }
 
-    # get current working directory
-    cwd <- getwd()
-
     # create new raster
     raster1 <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx, vals=0)
 
     # read vector boundary file
-    boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+    boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     boundaries <- rgdal::readOGR(boundaries_file)
 
     # rasterize vector file
     raster2 <- raster::rasterize(boundaries, raster1)
 
     # read reclassify file
-    reclassify_file <- paste(cwd, "/vector/reclassify.csv", sep="")
+    reclassify_file <- paste(hur_path, "/vector/reclassify.csv", sep="")
     rcl <- read.csv(reclassify_file)
 
     # convert to matrix
@@ -1671,7 +1736,7 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
     land_water <- raster::reclassify(raster2, rcl)
 
     # write to file
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
     raster::writeRaster(land_water, land_water_file, overwrite=TRUE)
 
@@ -1850,21 +1915,21 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
 #' @rdname utility
 
 hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=TRUE) {
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Extracting tracks ...\n")
     }
 
-    # get current working directory
-    cwd <- getwd()
-
     # output files
-    ids_file <- paste(cwd, "/input/ids.csv", sep="")
-    track_file <- paste(cwd, "/input/tracks.csv", sep="")
-    track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+    ids_file <- paste(hur_path, "/input/ids.csv", sep="")
+    track_file <- paste(hur_path, "/input/tracks.csv", sep="")
+    track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
 
     # read input tracks file
-    input_track_file <- paste(cwd, "/input/input_tracks.csv", sep="")
+    input_track_file <- paste(hur_path, "/input/input_tracks.csv", sep="")
     check_file_exists(input_track_file)
     tt <- read.csv(input_track_file, header=TRUE)
     tt_rows <- nrow(tt)
@@ -1875,7 +1940,7 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=
     ii_rows <- nrow(ii)
 
     # read land-water file
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
     land_water <- raster::raster(land_water_file)
 
@@ -2018,6 +2083,9 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=
 hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, 
     save=TRUE, console=TRUE) { 
 
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Modeling site ...\n")
@@ -2025,9 +2093,6 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
 
     # record total elapsed time
     start_time <- Sys.time()
-
-    # get current working directory
-    cwd <- getwd()
 
     # read sites file
     sites <- read_site_file(site_name)
@@ -2103,7 +2168,7 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
     # output
     if (save == TRUE) {
         # save modeled data to CSV file
-        modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
+        modeled_file <- paste(hur_path, "/site/", hur_id, " ", site_name, ".csv", sep="")
         write.csv(mm, modeled_file, quote=FALSE, row.names=FALSE)
     
         if (console == TRUE) {
@@ -2134,16 +2199,16 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
 hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, 
     save=TRUE, console=TRUE) {
 
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Modeling site all ...\n")
     }
 
-    # get current working directory
-    cwd <- getwd()
-
     # read ids file
-    ids_file <- paste(cwd, "/input/ids.csv", sep="")
+    ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
     ii <- read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
@@ -2218,7 +2283,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
     # output
     if (save == TRUE) {
         # save modeled data to CSV file
-        site_peak_file <- paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
+        site_peak_file <- paste(hur_path, "/site-all/", site_name, " Peak Values.csv", sep="")
         write.csv(peak_values, site_peak_file, quote=FALSE, row.names=FALSE)
 
         if (console == TRUE) {
@@ -2252,13 +2317,13 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
 hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FALSE, 
     save=TRUE, console=TRUE) {
 
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Modeling region ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
  
     # get time step if necessary
     if (is.null(time_step)) {
@@ -2291,7 +2356,7 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
     # output
     if (save == TRUE) {
         # save modeled values in a Geotiff file
-        hur_tif_file = paste(cwd, "/region/", hur_id, ".tif", sep="")
+        hur_tif_file = paste(hur_path, "/region/", hur_id, ".tif", sep="")
         rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
         raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
     
@@ -2325,13 +2390,13 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE, 
     save=TRUE, console=TRUE) {
 
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Modeling region dt ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
  
     # read hurricane track file
     tt <- read_hurricane_track_file(hur_id)
@@ -2347,7 +2412,7 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
     if (save == TRUE) {
         # save modeled values in a Geotiff file
         dt2 <- gsub(":", "", dt)
-        hur_tif_file <- paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+        hur_tif_file <- paste(hur_path, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
         rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
         raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
     
@@ -2385,13 +2450,13 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE, 
     console=TRUE, returns=FALSE) {
   
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Modeling region all ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
 
     # get time step if necessary
     if (is.null(time_step)) {
@@ -2403,7 +2468,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
     }
 
     # read ids file
-    ids_file <- paste(cwd, "/input/ids.csv", sep="")
+    ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
     ii <- read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
@@ -2428,19 +2493,19 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
             save=FALSE, console=FALSE)
 
         # save modeled values in a Geotiff file
-        hur_tif_file <- paste(cwd, "/region-all/", hur_id, ".tif", sep="")
+        hur_tif_file <- paste(hur_path, "/region-all/", hur_id, ".tif", sep="")
         rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
         raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
     }
 
     # get & save summary.csv file
     kk <- get_regional_summary_csv()
-    peak_file <- paste(cwd, "/region-all/summary.csv", sep="")
+    peak_file <- paste(hur_path, "/region-all/summary.csv", sep="")
     write.csv(kk, peak_file, row.names=FALSE)
 
     # get & save summary.tif file
     sum_brick <- get_regional_summary_tif()
-    sum_brick_file <- paste(cwd, "/region-all/summary.tif", sep="")
+    sum_brick_file <- paste(hur_path, "/region-all/summary.tif", sep="")
     rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
     raster::writeRaster(sum_brick, sum_brick_file, overwrite=TRUE)
 
@@ -2452,7 +2517,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
 
     # display where results are saved
     if (console == TRUE) {
-        reg_all_dir <- paste(cwd, "/region-all/", sep="")
+        reg_all_dir <- paste(hur_path, "/region-all/", sep="")
         cat("Saving to", reg_all_dir, "\n")
     }
 
@@ -2477,16 +2542,16 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
 #' @rdname summarizing
 
 hurrecon_summarize_land_water <- function(console=TRUE) {
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Summarizing land-water ...\n")
     }
 
-    # get current working directory
-    cwd <- getwd()
-
     # read land-water file
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
     land_water <- raster::raster(land_water_file)
     land_water_matrix <- raster::as.matrix(land_water)
@@ -2533,16 +2598,16 @@ hurrecon_summarize_land_water <- function(console=TRUE) {
 #' @rdname summarizing
 
 hurrecon_summarize_tracks <- function(console=TRUE) {
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Summarizing tracks ...\n")
     }
 
-    # get current working directory
-    cwd <- getwd()
-
     # read ids file
-    ids_file <- paste(cwd, "/input/ids.csv", sep="")
+    ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
     ii <- read.csv(ids_file, header=TRUE)
     ii_rows <- nrow(ii)
@@ -2575,17 +2640,17 @@ hurrecon_summarize_tracks <- function(console=TRUE) {
 #' @rdname summarizing
 
 hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Summarizing site ...\n")
     }
-    
-    # get current working directory
-    cwd <- getwd()
 
     # read data
     modeled_name <- paste(hur_id, site_name)
-    modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
+    modeled_file <- paste(hur_path, "/site/", hur_id, " ", site_name, ".csv", sep="")
     check_file_exists(modeled_file)
     mm <- read.csv(modeled_file, header=TRUE)
 
@@ -2659,13 +2724,13 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
     end_datetime='', xvar="datetime", yvar="wind_speed", adjust=FALSE,
     legend_loc="topright", title="", console=TRUE) {
 
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Plotting site ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
 
     # get enhanced Fujita wind speeds
     ef <- get_fujita_wind_speeds()
@@ -2694,7 +2759,7 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
     }
 
     # read data
-    modeled_file <- paste(cwd, "/site/", hur_id, " ", site_name, ".csv", sep="")
+    modeled_file <- paste(hur_path, "/site/", hur_id, " ", site_name, ".csv", sep="")
     check_file_exists(modeled_file)
     mm <- read.csv(modeled_file, header=TRUE)
     mm_rows <- nrow(mm)
@@ -2716,7 +2781,7 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
         x_label <- "Wind Direction (deg)"
   
     } else {
-        stop("xvar must be datetime or wind_direction")
+        stop("xvar must be datetime or wind_direction", call. = FALSE)
     }
 
     # y variable
@@ -2733,7 +2798,7 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
         y_label <- "Wind Direction (deg)"
 
     } else {
-        stop("yvar must be wind_speed, gust_speed, or wind_direction")
+        stop("yvar must be wind_speed, gust_speed, or wind_direction", call. = FALSE)
     }
 
     # adjust wind direction
@@ -2868,13 +2933,13 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
 hurrecon_plot_site_all <- function(site_name, start_year='', end_year='', 
     var="wind_speed", legend_loc="topright", title="", console=TRUE) {
 
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Plotting site all ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
 
     # get enhanced Fujita wind speeds
     ef <- get_fujita_wind_speeds()
@@ -2903,7 +2968,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
     }
 
     # read data
-    peak_file <- paste(cwd, "/site-all/", site_name, " Peak Values.csv", sep="")
+    peak_file <- paste(hur_path, "/site-all/", site_name, " Peak Values.csv", sep="")
     check_file_exists(peak_file)
     kk <- read.csv(peak_file, header=TRUE)
     kk_rows <- nrow(kk)
@@ -2922,7 +2987,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
         y_var <- "wind_dir"
         y_label <- "Wind Direction (deg)"
     } else {
-        stop("var must be wind_speed, gust_speed, or wind_direction")
+        stop("var must be wind_speed, gust_speed, or wind_direction", call. = FALSE)
     }
 
     # subset by year
@@ -3034,36 +3099,36 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 hurrecon_plot_tracks <- function(select="all", wind_min=33, title="", 
     colormap="default", console=TRUE) {
     
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Plotting tracks ...\n")
     }
 
-    # get current working directory
-    cwd <- getwd()
-
     # read land-water file
-    land_water_file <- paste(cwd, "/input/land_water.tif", sep="")
+    land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
     land_water <- raster::raster(land_water_file)
 
     # get vector boundary file
-    boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+    boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
     boundaries <- rgdal::readOGR(boundaries_file)
 
     # get hurricane tracks
-    ids_file <- paste(cwd, "/input/ids.csv", sep="")
+    ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
     ii <- read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
 
-    track_file <- paste(cwd, "/input/tracks.csv", sep="")
+    track_file <- paste(hur_path, "/input/tracks.csv", sep="")
     check_file_exists(track_file)
     tt <- read.csv(track_file, header=TRUE)
     names(tt)[1] <- "hur_id"
 
-    track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+    track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
     check_file_exists(track_all_file)
     tt_all <- read.csv(track_all_file, header=TRUE)
     names(tt_all)[1] <- "hur_id"
@@ -3138,13 +3203,13 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     positions=FALSE, title="", colormap="default", console=TRUE) {
   
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Plotting region ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
  
     # get subdirectory
     if (region_all == TRUE) {
@@ -3154,7 +3219,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     }
 
     # read raster brick file in GeoTiff format
-    hur_tif_file <- paste(cwd, "/", subdir, "/", hur_id, ".tif", sep="")
+    hur_tif_file <- paste(hur_path, "/", subdir, "/", hur_id, ".tif", sep="")
     check_file_exists(hur_tif_file)
     hur_brick <- raster::brick(hur_tif_file)
 
@@ -3171,12 +3236,12 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     f5_layer <- raster::subset(hur_brick, 10) # duration of EF5 winds (minutes)
 
     # get vector boundary file
-    boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+    boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
     boundaries <- rgdal::readOGR(boundaries_file)
 
     # get hurricane tracks
-    track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+    track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
     check_file_exists(track_all_file)
     zz <-read.csv(track_all_file, header=TRUE)
     names(zz)[1] <- "hur_id"
@@ -3412,7 +3477,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
 
     } else {
         stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, ef0_duration, 
-            ef1_duration, ef2_duration, ef3_duration, ef4_duration, or ef5_duration")
+            ef1_duration, ef2_duration, ef3_duration, ef4_duration, or ef5_duration", call. = FALSE)
     }
 }
 
@@ -3435,17 +3500,17 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
 hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FALSE,
     title="", colormap="default", console=TRUE) {
 
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Plotting region dt ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
  
     # read raster brick file in GeoTiff format
     dt2 <- gsub(":", "", dt)
-    hur_tif_file <- paste(cwd, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+    hur_tif_file <- paste(hur_path, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
     check_file_exists(hur_tif_file)
     hur_brick <- raster::brick(hur_tif_file)
 
@@ -3456,7 +3521,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     cc_layer <- raster::subset(hur_brick, 4)  # cardinal wind direction (1-8)
 
     # get vector boundary file
-    boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+    boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
     boundaries <- rgdal::readOGR(boundaries_file)
 
@@ -3465,7 +3530,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     pp <- get_values_at_datetime(hur_id, tt, dt)
 
     # get hurricane track
-    track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+    track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
     check_file_exists(track_all_file)
     zz <-read.csv(track_all_file, header=TRUE)
     names(zz)[1] <- "hur_id"
@@ -3603,7 +3668,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
         }
 
     } else {
-        stop("var must be wind_speed, fujita_scale, wind_direction, or wind_compass")
+        stop("var must be wind_speed, fujita_scale, wind_direction, or wind_compass", call. = FALSE)
     }
 }
 
@@ -3623,16 +3688,16 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
 hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     colormap="default", console=TRUE) {
     
+    # get path
+    hur_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Plotting region all ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
  
     # read summary file in GeoTiff format
-    sum_tif_file <- paste(cwd, "/region-all/", "summary.tif", sep="")
+    sum_tif_file <- paste(hur_path, "/region-all/", "summary.tif", sep="")
     check_file_exists(sum_tif_file)
     sum_brick <- raster::brick(sum_tif_file)
 
@@ -3646,7 +3711,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     ef5_layer <- raster::subset(sum_brick, 7)
 
     # get vector boundary file
-    boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+    boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
     boundaries <- rgdal::readOGR(boundaries_file)
 
@@ -3705,17 +3770,17 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
 
     # get hurricane tracks
     if (tracks) {
-        ids_file <- paste(cwd, "/input/ids.csv", sep="")
+        ids_file <- paste(hur_path, "/input/ids.csv", sep="")
         check_file_exists(ids_file)
         ii <- read.csv(ids_file, header=TRUE)
         names(ii)[1] <- "hur_id"
 
-        track_all_file <- paste(cwd, "/input/tracks_all.csv", sep="")
+        track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
         check_file_exists(track_all_file)
         tt_all <- read.csv(track_all_file, header=TRUE)
         names(tt_all)[1] <- "hur_id"
 
-        summary_file <- paste(cwd, "/region-all/summary.csv", sep="")
+        summary_file <- paste(hur_path, "/region-all/summary.csv", sep="")
         check_file_exists(summary_file)
         kk <- read.csv(summary_file, header=TRUE)
         names(kk)[1] <- "hur_id"
@@ -3880,7 +3945,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
         }
 
     } else {
-        stop("var must be efmax, ef0, ef1, ef2, ef3, ef4, or ef5")
+        stop("var must be efmax, ef0, ef1, ef2, ef3, ef4, or ef5", call. = FALSE)
     }
 }
 

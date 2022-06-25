@@ -2,6 +2,7 @@
 
 export(hurrecon_create_land_water)
 export(hurrecon_extract_tracks)
+export(hurrecon_get_path)
 export(hurrecon_model_region)
 export(hurrecon_model_region_all)
 export(hurrecon_model_region_dt)
