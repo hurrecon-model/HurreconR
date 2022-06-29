@@ -14,7 +14,8 @@ hurrecon_model_site(
   width = FALSE,
   time_step = 1,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_site_all(
@@ -22,7 +23,8 @@ hurrecon_model_site_all(
   width = FALSE,
   time_step = 1,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_region(
@@ -31,7 +33,8 @@ hurrecon_model_region(
   time_step = NULL,
   water = FALSE,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_region_dt(
@@ -40,7 +43,8 @@ hurrecon_model_region_dt(
   width = FALSE,
   water = FALSE,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_region_all(
@@ -48,7 +52,8 @@ hurrecon_model_region_all(
   time_step = NULL,
   water = FALSE,
   console = TRUE,
-  returns = FALSE
+  returns = FALSE,
+  hur_path = NULL
 )
 }
 \arguments{
@@ -63,6 +68,8 @@ hurrecon_model_region_all(
 \item{save}{whether to save results to a GeoTiff file}
 
 \item{console}{whether to display messages in console}
+
+\item{hur_path}{path for current set of model runs}
 
 \item{water}{whether to calculate results over water}
 
@@ -124,4 +131,8 @@ land areas only. Results for each hurricane are saved in a GeoTiff file on
 the region-all subdirectory. Summary results for all hurricanes (summary.csv,
 summary.tif) are also calculated and saved to the region-all subdirectory. 
 If returns is TRUE, summary values are returned.
+}
+\examples{
+hurrecon_model_site(hur_id="AL1935-03", site_name="Miami FL", time_step=60, 
+save=FALSE, console=FALSE, hur_path="HurreconR")
 }

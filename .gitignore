@@ -1,0 +1,5 @@
+/HurreconR.Rcheck/
+*.tar.gz
+.RHistory
+/doc/
+/Meta/

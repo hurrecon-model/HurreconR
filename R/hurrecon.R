@@ -140,7 +140,7 @@ get_hur_id <- function(hd2_id) {
 #' @noRd
 
 format_time_difference_hms <- function(start_time, end_time) {
-    dsec <- as.numeric(difftime(end_time, start_time, unit="secs"))
+    dsec <- as.numeric(difftime(end_time, start_time, units="secs"))
   
     hours <- floor(dsec/3600)
     minutes <- floor((dsec - 3600*hours)/60)
@@ -162,7 +162,7 @@ format_time_difference_hms <- function(start_time, end_time) {
 #' @noRd
 
 format_time_difference_ms <- function(start_time, end_time) {
-    t_diff <- formatC(1000*difftime(end_time, start_time, unit="secs"), width=3, format="f", digits=0, flag="0")
+    t_diff <- formatC(1000*difftime(end_time, start_time, units="secs"), width=3, format="f", digits=0, flag="0")
 
     return(t_diff)
 }
@@ -179,7 +179,7 @@ check_file_exists <- function(file_name) {
     }
 }
 
-#' check_legend_location checks if the specified legend location is valid.
+#' check_graphics_legend_location checks if the specified legend location is valid.
 #' @param loc legend location
 #' @return TRUE or FALSE
 #' @noRd
@@ -204,7 +204,7 @@ read_site_file <- function(site_name) {
     # read site file
     site_file <- paste(hur_path, "/input/sites.csv", sep="")
     check_file_exists(site_file)
-    ss <- read.csv(site_file)
+    ss <- utils::read.csv(site_file)
     names(ss)[1] <- "site_name"
 
     # get site location & cover type
@@ -238,7 +238,7 @@ read_parameter_file <- function(hur_id, width) {
     # read parameter file
     par_file <- paste(hur_path, "/input/parameters.csv", sep="")
     check_file_exists(par_file)
-    pp <- read.csv(par_file)
+    pp <- utils::read.csv(par_file)
     names(pp)[1] <- "hur_id"
 
     # get rmw & s_par parameters
@@ -350,7 +350,7 @@ read_hurricane_track_file <- function(hur_id) {
     read_hurricane_track_file
     track_file <- paste(hur_path, "/input/tracks.csv", sep="")
     check_file_exists(track_file)
-    zz <-read.csv(track_file, header=TRUE)
+    zz <-utils::read.csv(track_file, header=TRUE)
     names(zz)[1] <- "hur_id"
 
     # subset by hurricane name
@@ -552,7 +552,7 @@ get_maximum_wind_speed <- function(hur_id) {
     # read hurricane track file
     track_file <- paste(hur_path, "/input/tracks.csv", sep="")
     check_file_exists(track_file)
-    zz <-read.csv(track_file, header=TRUE)
+    zz <-utils::read.csv(track_file, header=TRUE)
     names(zz)[1] <- "hur_id"
 
     # subset by hurricane name
@@ -1402,7 +1402,7 @@ get_regional_summary_csv <- function() {
     # read ids file
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
-    ii <- read.csv(ids_file, header=TRUE)
+    ii <- utils::read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
     ii_rows <- nrow(ii)
 
@@ -1443,7 +1443,7 @@ get_regional_summary_tif <- function() {
     # read ids file
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
-    ii <- read.csv(ids_file, header=TRUE)
+    ii <- utils::read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
     ii_rows <- nrow(ii)
 
@@ -1641,7 +1641,6 @@ get_track_lat_lon <- function(hur_id, fuj_min, tt, kk) {
 #' @param console whether to display messages in console
 #' @return no return value
 #' @export
-#' @examples
 #' @rdname utility
 
 hurrecon_set_path <- function(hur_path, console=TRUE) {
@@ -1664,7 +1663,6 @@ hurrecon_set_path <- function(hur_path, console=TRUE) {
 #' @param console whether to display messages in console
 #' @return current path
 #' @export
-#' @examples
 #' @rdname utility
 
 hurrecon_get_path <- function(console=TRUE) {
@@ -1702,13 +1700,20 @@ hurrecon_get_path <- function(console=TRUE) {
 #' @param ymn minimum latitude (degrees)
 #' @param ymx maximum latitude (degrees)
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname utility
 
-hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console=TRUE) {
+hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, 
+    console=TRUE, hur_path=NULL) {
+    
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -1727,7 +1732,7 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 
     # read reclassify file
     reclassify_file <- paste(hur_path, "/vector/reclassify.csv", sep="")
-    rcl <- read.csv(reclassify_file)
+    rcl <- utils::read.csv(reclassify_file)
 
     # convert to matrix
     rcl <- as.matrix(rcl, ncol=3, byrow=TRUE)
@@ -1767,6 +1772,7 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, console
 #' @rdname utility
 
 hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
+    
     # announcement
     if (console == TRUE) {
         cat("... Reformatting Hurdat2 ...\n")
@@ -1877,7 +1883,7 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
     tracks[ , c("date", "time", "date2", "hour", "minute")] <- list(NULL)
 
     # save to file
-    write.csv(tracks, track_file, row.names=FALSE)
+    utils::write.csv(tracks, track_file, row.names=FALSE)
 
     # get number of storms
     ii <- tracks[ , c("hur_id", "name")]
@@ -1910,13 +1916,20 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
 #' (meters/second)
 #' @param status whether to limit search to storms with hurricane status
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname utility
 
-hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=TRUE) {
+hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, 
+    console=TRUE, hur_path=NULL) {
+    
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -1931,7 +1944,7 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=
     # read input tracks file
     input_track_file <- paste(hur_path, "/input/input_tracks.csv", sep="")
     check_file_exists(input_track_file)
-    tt <- read.csv(input_track_file, header=TRUE)
+    tt <- utils::read.csv(input_track_file, header=TRUE)
     tt_rows <- nrow(tt)
 
     # get ids
@@ -2046,9 +2059,9 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=
     tracks_all <- tracks_all[(tracks_all$hur_id != ""), ]
   
     # save to file
-    write.csv(ids, ids_file, row.names=FALSE)
-    write.csv(tracks, track_file, row.names=FALSE)
-    write.csv(tracks_all, track_all_file, row.names=FALSE)
+    utils::write.csv(ids, ids_file, row.names=FALSE)
+    utils::write.csv(tracks, track_file, row.names=FALSE)
+    utils::write.csv(tracks_all, track_all_file, row.names=FALSE)
 
     # display number of storms
     if (console == TRUE) {
@@ -2075,16 +2088,23 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE, console=
 #' @param time_step time step (minutes)
 #' @param save whether to save results to a CSV file
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return a data frame of results
 #' @export
 #' @examples
+#' hurrecon_model_site(hur_id="AL1935-03", site_name="Miami FL", time_step=60, 
+#' save=FALSE, console=FALSE, hur_path="HurreconR")
 #' @rdname modeling
 
 hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, 
-    save=TRUE, console=TRUE) { 
+    save=TRUE, console=TRUE, hur_path=NULL) { 
 
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2168,8 +2188,9 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
     # output
     if (save == TRUE) {
         # save modeled data to CSV file
-        modeled_file <- paste(hur_path, "/site/", hur_id, " ", site_name, ".csv", sep="")
-        write.csv(mm, modeled_file, quote=FALSE, row.names=FALSE)
+        site_name2 <- gsub(" ", "_", site_name)
+        modeled_file <- paste(hur_path, "/site/", hur_id, "_", site_name2, ".csv", sep="")
+        utils::write.csv(mm, modeled_file, quote=FALSE, row.names=FALSE)
     
         if (console == TRUE) {
             cat("Saving to", modeled_file, "\n")
@@ -2192,15 +2213,20 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
 #' @param time_step time step (minutes)
 #' @param save whether to save results to a CSV file
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return a data frame of results
 #' @export
 #' @rdname modeling
 
 hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1, 
-    save=TRUE, console=TRUE) {
+    save=TRUE, console=TRUE, hur_path=NULL) {
 
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2210,7 +2236,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
     # read ids file
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
-    ii <- read.csv(ids_file, header=TRUE)
+    ii <- utils::read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
     ii_rows <- nrow(ii)
 
@@ -2283,8 +2309,9 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
     # output
     if (save == TRUE) {
         # save modeled data to CSV file
-        site_peak_file <- paste(hur_path, "/site-all/", site_name, " Peak Values.csv", sep="")
-        write.csv(peak_values, site_peak_file, quote=FALSE, row.names=FALSE)
+        site_name2 <- gsub(" ", "_", site_name)
+        site_peak_file <- paste(hur_path, "/site-all/", site_name2, "_Peak_Values.csv", sep="")
+        utils::write.csv(peak_values, site_peak_file, quote=FALSE, row.names=FALSE)
 
         if (console == TRUE) {
             cat("Saving to", site_peak_file, "\n")
@@ -2310,15 +2337,20 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
 #' @param water whether to caculate results over water
 #' @param save whether to save results to a GeoTiff file
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return a brick of 6 rasters
 #' @export
 #' @rdname modeling
 
 hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FALSE, 
-    save=TRUE, console=TRUE) {
+    save=TRUE, console=TRUE, hur_path=NULL) {
 
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2383,15 +2415,20 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 #' @param water whether to caculate results over water
 #' @param save whether to save results to a GeoTiff file
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return a brick of 4 rasters
 #' @export
 #' @rdname modeling
 
 hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE, 
-    save=TRUE, console=TRUE) {
+    save=TRUE, console=TRUE, hur_path=NULL) {
 
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2442,16 +2479,21 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 #' @param water whether to calculate results over water
 #' @param console whether to display messages in console
 #' @param returns whether to return summary values
+#' @param hur_path path for current set of model runs
 #' @return a list containing a data frame and a raster brick if return_value 
 #' is TRUE
 #' @export
 #' @rdname modeling
 
 hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE, 
-    console=TRUE, returns=FALSE) {
+    console=TRUE, returns=FALSE, hur_path=NULL) {
   
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2470,7 +2512,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
     # read ids file
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
-    ii <- read.csv(ids_file, header=TRUE)
+    ii <- utils::read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
     ii_rows <- nrow(ii)
 
@@ -2501,7 +2543,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
     # get & save summary.csv file
     kk <- get_regional_summary_csv()
     peak_file <- paste(hur_path, "/region-all/summary.csv", sep="")
-    write.csv(kk, peak_file, row.names=FALSE)
+    utils::write.csv(kk, peak_file, row.names=FALSE)
 
     # get & save summary.tif file
     sum_brick <- get_regional_summary_tif()
@@ -2536,14 +2578,18 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
 #' hurrecon_summarize_land_water displays information about the current
 #' land-water file (land_water.tif).
 #' @param console whether to display results in console
+#' @param hur_path path for current set of model runs
 #' @return a string containing summary information
 #' @export
-#' @examples
 #' @rdname summarizing
 
-hurrecon_summarize_land_water <- function(console=TRUE) {
+hurrecon_summarize_land_water <- function(console=TRUE, hur_path=NULL) {
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2593,13 +2639,18 @@ hurrecon_summarize_land_water <- function(console=TRUE) {
 #' hurrecon_summarize_tracks displays information about the current ids file 
 #' (ids.csv).
 #' @param console whether to display results in console
+#' @param hur_path path for current set of model runs
 #' @return a string containing summary information
 #' @export
 #' @rdname summarizing
 
-hurrecon_summarize_tracks <- function(console=TRUE) {
+hurrecon_summarize_tracks <- function(console=TRUE, hur_path=NULL) {
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2609,7 +2660,7 @@ hurrecon_summarize_tracks <- function(console=TRUE) {
     # read ids file
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
-    ii <- read.csv(ids_file, header=TRUE)
+    ii <- utils::read.csv(ids_file, header=TRUE)
     ii_rows <- nrow(ii)
 
     positions_total <- sum(ii$positions)
@@ -2635,13 +2686,18 @@ hurrecon_summarize_tracks <- function(console=TRUE) {
 #' @param hur_id hurricane id
 #' @param site_name name of site
 #' @param console whether to display results in console
+#' @param hur_path path for current set of model runs
 #' @return a string containing summary information
 #' @export
 #' @rdname summarizing
 
-hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
+hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE, hur_path=NULL) {
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2649,10 +2705,11 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
     }
 
     # read data
+    site_name2 <- gsub(" ", "_", site_name)
     modeled_name <- paste(hur_id, site_name)
-    modeled_file <- paste(hur_path, "/site/", hur_id, " ", site_name, ".csv", sep="")
+    modeled_file <- paste(hur_path, "/site/", hur_id, "_", site_name2, ".csv", sep="")
     check_file_exists(modeled_file)
-    mm <- read.csv(modeled_file, header=TRUE)
+    mm <- utils::read.csv(modeled_file, header=TRUE)
 
     # get peak values
     pk <- get_peak_values(hur_id, site_name, mm$date_time, mm$wind_dir, mm$wind_spd, 
@@ -2715,17 +2772,21 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE) {
 #' @param legend_loc legend location
 #' @param title optional title
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
-#' @examples
 #' @rdname plotting
 
 hurrecon_plot_site <- function(hur_id, site_name, start_datetime='', 
     end_datetime='', xvar="datetime", yvar="wind_speed", adjust=FALSE,
-    legend_loc="topright", title="", console=TRUE) {
+    legend_loc="topright", title="", console=TRUE, hur_path=NULL) {
 
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2759,9 +2820,10 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
     }
 
     # read data
-    modeled_file <- paste(hur_path, "/site/", hur_id, " ", site_name, ".csv", sep="")
+    site_name2 <- gsub(" ", "_", site_name)    
+    modeled_file <- paste(hur_path, "/site/", hur_id, "_", site_name2, ".csv", sep="")
     check_file_exists(modeled_file)
-    mm <- read.csv(modeled_file, header=TRUE)
+    mm <- utils::read.csv(modeled_file, header=TRUE)
     mm_rows <- nrow(mm)
 
     # add datetime
@@ -2861,26 +2923,26 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
     }
 
     # create plot
-    par(mar=c(5.1, 5.6, 4.1, 2.1))
+    graphics::par(mar=c(5.1, 5.6, 4.1, 2.1))
 
     if (plot_type == "time_series") {
         plot(xaxt="n", type="n", xlim, ylim, cex.main=1.7, cex.lab=1.7, xlab=x_label, 
             ylab=y_label, main=main_title) 
 
-        axis.POSIXct(1, mm_plot$dt, format="%m-%d %H")
+        graphics::axis.POSIXct(1, mm_plot$dt, format="%m-%d %H")
 
     } else {
         plot(type="n", xlim, ylim, cex.main=1.7, cex.lab=1.7, xlab=x_label, 
         ylab=y_label, main=main_title)
     }
 
-    points(mm_plot_efx[c(x_var, y_var)], pch=16, cex=1.0, col=efx_col)
-    points(mm_plot_ef0[c(x_var, y_var)], pch=16, cex=1.0, col=ef0_col)
-    points(mm_plot_ef1[c(x_var, y_var)], pch=16, cex=1.0, col=ef1_col)
-    points(mm_plot_ef2[c(x_var, y_var)], pch=16, cex=1.0, col=ef2_col)
-    points(mm_plot_ef3[c(x_var, y_var)], pch=16, cex=1.0, col=ef3_col)
-    points(mm_plot_ef4[c(x_var, y_var)], pch=16, cex=1.0, col=ef4_col)
-    points(mm_plot_ef5[c(x_var, y_var)], pch=16, cex=1.0, col=ef5_col)
+    graphics::points(mm_plot_efx[c(x_var, y_var)], pch=16, cex=1.0, col=efx_col)
+    graphics::points(mm_plot_ef0[c(x_var, y_var)], pch=16, cex=1.0, col=ef0_col)
+    graphics::points(mm_plot_ef1[c(x_var, y_var)], pch=16, cex=1.0, col=ef1_col)
+    graphics::points(mm_plot_ef2[c(x_var, y_var)], pch=16, cex=1.0, col=ef2_col)
+    graphics::points(mm_plot_ef3[c(x_var, y_var)], pch=16, cex=1.0, col=ef3_col)
+    graphics::points(mm_plot_ef4[c(x_var, y_var)], pch=16, cex=1.0, col=ef4_col)
+    graphics::points(mm_plot_ef5[c(x_var, y_var)], pch=16, cex=1.0, col=ef5_col)
 
     # create legend
     labs <- c("No damage")
@@ -2911,7 +2973,7 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
         cols <- append(cols, ef5_col)
     }
 
-    legend(legend_loc, NULL, labs, cols, cex=0.7)
+    graphics::legend(legend_loc, NULL, labs, cols, cex=0.7)
 }
 
 #' @description
@@ -2926,15 +2988,20 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
 #' @param legend_loc legend location
 #' @param title optional title
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_site_all <- function(site_name, start_year='', end_year='', 
-    var="wind_speed", legend_loc="topright", title="", console=TRUE) {
+    var="wind_speed", legend_loc="topright", title="", console=TRUE, hur_path=NULL) {
 
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -2968,9 +3035,10 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
     }
 
     # read data
-    peak_file <- paste(hur_path, "/site-all/", site_name, " Peak Values.csv", sep="")
+    site_name2 <- gsub(" ", "_", site_name)
+    peak_file <- paste(hur_path, "/site-all/", site_name2, "_Peak_Values.csv", sep="")
     check_file_exists(peak_file)
-    kk <- read.csv(peak_file, header=TRUE)
+    kk <- utils::read.csv(peak_file, header=TRUE)
     kk_rows <- nrow(kk)
 
     # get axis labels
@@ -3037,18 +3105,18 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
     }
  
     # create plot
-    par(mar=c(5.1, 5.6, 4.1, 2.1))
+    graphics::par(mar=c(5.1, 5.6, 4.1, 2.1))
 
     plot(type="n", xlim, ylim, cex.main=1.7, cex.lab=1.7, xlab=x_label, 
         ylab=y_label, main=main_title)
 
-    points(kk_plot_efx[c(x_var, y_var)], pch=16, cex=1.5, col=efx_col)
-    points(kk_plot_ef0[c(x_var, y_var)], pch=16, cex=1.5, col=ef0_col)
-    points(kk_plot_ef1[c(x_var, y_var)], pch=16, cex=1.5, col=ef1_col)
-    points(kk_plot_ef2[c(x_var, y_var)], pch=16, cex=1.5, col=ef2_col)
-    points(kk_plot_ef3[c(x_var, y_var)], pch=16, cex=1.5, col=ef3_col)
-    points(kk_plot_ef4[c(x_var, y_var)], pch=16, cex=1.5, col=ef4_col)
-    points(kk_plot_ef5[c(x_var, y_var)], pch=16, cex=1.5, col=ef5_col)
+    graphics::points(kk_plot_efx[c(x_var, y_var)], pch=16, cex=1.5, col=efx_col)
+    graphics::points(kk_plot_ef0[c(x_var, y_var)], pch=16, cex=1.5, col=ef0_col)
+    graphics::points(kk_plot_ef1[c(x_var, y_var)], pch=16, cex=1.5, col=ef1_col)
+    graphics::points(kk_plot_ef2[c(x_var, y_var)], pch=16, cex=1.5, col=ef2_col)
+    graphics::points(kk_plot_ef3[c(x_var, y_var)], pch=16, cex=1.5, col=ef3_col)
+    graphics::points(kk_plot_ef4[c(x_var, y_var)], pch=16, cex=1.5, col=ef4_col)
+    graphics::points(kk_plot_ef5[c(x_var, y_var)], pch=16, cex=1.5, col=ef5_col)
 
     # create legend
     labs <- c("No damage")
@@ -3079,7 +3147,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
         cols <- append(cols, ef5_col)
     }
 
-    legend(legend_loc, NULL, labs, cols, cex=0.7)
+    graphics::legend(legend_loc, NULL, labs, cols, cex=0.7)
 }
 
 #' @description
@@ -3092,15 +3160,20 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
 #' @param title optional title
 #' @param colormap color palette
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_tracks <- function(select="all", wind_min=33, title="", 
-    colormap="default", console=TRUE) {
+    colormap="default", console=TRUE, hur_path=NULL) {
     
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -3120,22 +3193,22 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
     # get hurricane tracks
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
     check_file_exists(ids_file)
-    ii <- read.csv(ids_file, header=TRUE)
+    ii <- utils::read.csv(ids_file, header=TRUE)
     names(ii)[1] <- "hur_id"
 
     track_file <- paste(hur_path, "/input/tracks.csv", sep="")
     check_file_exists(track_file)
-    tt <- read.csv(track_file, header=TRUE)
+    tt <- utils::read.csv(track_file, header=TRUE)
     names(tt)[1] <- "hur_id"
 
     track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
     check_file_exists(track_all_file)
-    tt_all <- read.csv(track_all_file, header=TRUE)
+    tt_all <- utils::read.csv(track_all_file, header=TRUE)
     names(tt_all)[1] <- "hur_id"
 
     # get palette
     if (length(colormap) == 1) {
-        cmap <- rev(terrain.colors(255))
+        cmap <- rev(grDevices::terrain.colors(255))
 
     } else {
         cmap <- colormap
@@ -3152,7 +3225,7 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
     }
 
     # create plot
-    par(mar=c(5.1, 4.6, 4.1, 2.1))
+    graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
   
     vals <- c(0, 1, 2)
     labs <- c("", "water", "land")
@@ -3167,7 +3240,7 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
             if (ii$wind_peak[i] >= wind_min) {
                 hur_id <- ii[i, "hur_id"]
                 xx <- tt_all[tt_all$hur_id == hur_id, ]
-                lines(xx$longitude, xx$latitude, col="grey")
+                graphics::lines(xx$longitude, xx$latitude, col="grey")
             }
         }
     
@@ -3176,7 +3249,7 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
             if (ii$wind_peak[i] >= wind_min) {
                 hur_id <- ii[i, "hur_id"]
                 xx <- tt[tt$hur_id == hur_id, ]
-                lines(xx$longitude, xx$latitude, col="grey")
+                graphics::lines(xx$longitude, xx$latitude, col="grey")
             }
         }
     }
@@ -3196,15 +3269,20 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 #' @param title optional title
 #' @param colormap color palette
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
-    positions=FALSE, title="", colormap="default", console=TRUE) {
+    positions=FALSE, title="", colormap="default", console=TRUE, hur_path=NULL) {
   
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -3243,7 +3321,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     # get hurricane tracks
     track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
     check_file_exists(track_all_file)
-    zz <-read.csv(track_all_file, header=TRUE)
+    zz <-utils::read.csv(track_all_file, header=TRUE)
     names(zz)[1] <- "hur_id"
     index <- which(zz$hur_id == hur_id)
     tt_all <- zz[index, ]
@@ -3285,11 +3363,11 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
                 cmap <- ff_cols
 
             } else if (var == "wind_compass") {
-                cmap <- rainbow(9)
+                cmap <- grDevices::rainbow(9)
                 cmap[1] <- "white"
 
             } else {
-                cmap <- rev(terrain.colors(255))
+                cmap <- rev(grDevices::terrain.colors(255))
             }
         }  
     # user-specified palette
@@ -3305,7 +3383,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     main_title <- title
 
     # create plot
-    par(mar=c(5.1, 4.6, 4.1, 2.1))
+    graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
   
     if (var == "wind_speed") {
         if (raster::maxValue(ss_layer) > 0) {
@@ -3315,9 +3393,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  m/sec', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No wind speed")   
@@ -3331,9 +3409,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
                 legend.args=list(text='  EF Scale', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No Fujita values")
@@ -3348,9 +3426,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  degrees', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No wind direction")   
@@ -3365,9 +3443,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
                 legend.args=list(text='  direction', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No wind compass")
@@ -3382,9 +3460,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(f0_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No EF0 winds")
@@ -3399,9 +3477,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(f1_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No EF1 winds")
@@ -3416,9 +3494,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(f2_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No EF2 winds")
@@ -3433,9 +3511,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(f3_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No EF3 winds")
@@ -3450,9 +3528,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(f4_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No EF4 winds")
@@ -3467,9 +3545,9 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             raster::plot(f5_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  hours', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
         } else {
             message("No EF5 winds")
@@ -3493,15 +3571,20 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
 #' @param title optional title
 #' @param colormap color palette
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FALSE,
-    title="", colormap="default", console=TRUE) {
+    title="", colormap="default", console=TRUE, hur_path=NULL) {
 
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -3532,7 +3615,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     # get hurricane track
     track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
     check_file_exists(track_all_file)
-    zz <-read.csv(track_all_file, header=TRUE)
+    zz <-utils::read.csv(track_all_file, header=TRUE)
     names(zz)[1] <- "hur_id"
     index <- which(zz$hur_id == hur_id)
     tt_all <- zz[index, ]
@@ -3574,11 +3657,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
                 cmap <- ff_cols
 
             } else if (var == "wind_compass") {
-                cmap <- rainbow(9)
+                cmap <- grDevices::rainbow(9)
                 cmap[1] <- "white"
 
             } else {
-                cmap <- rev(terrain.colors(255))
+                cmap <- rev(grDevices::terrain.colors(255))
             }
         }
 
@@ -3595,7 +3678,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     main_title <- title
 
     # create plot
-    par(mar=c(5.1, 4.6, 4.1, 2.1))
+    graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
   
     if (var == "fujita_scale") {
         if (raster::maxValue(ff_layer) > 0) {
@@ -3606,11 +3689,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
             raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
                 legend.args=list(text='  EF Scale', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
-            points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
+            graphics::points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
         } else {
             message("No Fujita values")
         }
@@ -3623,11 +3706,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
             raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  m/sec', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
-            points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
+            graphics::points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
         } else {
             message("No wind speed")
         }
@@ -3640,11 +3723,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
             raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_title, 
                 legend.args=list(text='  degrees', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
-            points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
+            graphics::points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
         } else {
             message("No wind direction")   
         }
@@ -3658,11 +3741,11 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
             raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
                 legend.args=list(text='  direction', line=1), col=cmap)
             raster::plot(boundaries, add=TRUE)
-            lines(tt_all$longitude, tt_all$latitude, col="brown")
+            graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
-                points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
+                graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
             }
-            points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
+            graphics::points(pp$lon[1], pp$lat[1], pch=16, cex=1, col="brown")
         } else {
             message("No wind compass")
         }
@@ -3681,15 +3764,20 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
 #' @param title optional title
 #' @param colormap color palette
 #' @param console whether to display messages in console
+#' @param hur_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
-    colormap="default", console=TRUE) {
+    colormap="default", console=TRUE, hur_path=NULL) {
     
     # get path
-    hur_path <- get_path()
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_path()
+    }
 
     # announcement
     if (console == TRUE) {
@@ -3752,7 +3840,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                 cmap <- efm_cols
 
             } else {
-                cmap <- rev(terrain.colors(255))
+                cmap <- rev(grDevices::terrain.colors(255))
             }
         }  
 
@@ -3772,22 +3860,22 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     if (tracks) {
         ids_file <- paste(hur_path, "/input/ids.csv", sep="")
         check_file_exists(ids_file)
-        ii <- read.csv(ids_file, header=TRUE)
+        ii <- utils::read.csv(ids_file, header=TRUE)
         names(ii)[1] <- "hur_id"
 
         track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
         check_file_exists(track_all_file)
-        tt_all <- read.csv(track_all_file, header=TRUE)
+        tt_all <- utils::read.csv(track_all_file, header=TRUE)
         names(tt_all)[1] <- "hur_id"
 
         summary_file <- paste(hur_path, "/region-all/summary.csv", sep="")
         check_file_exists(summary_file)
-        kk <- read.csv(summary_file, header=TRUE)
+        kk <- utils::read.csv(summary_file, header=TRUE)
         names(kk)[1] <- "hur_id"
     }
   
     # create plot
-    par(mar=c(5.1, 4.6, 4.1, 2.1))
+    graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
 
     if (var == "efmax") {
         if (raster::maxValue(efm_layer) > 0) {
@@ -3804,7 +3892,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                     fuj_min <- 0
                     xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
                     if (!is.null(xx)) {
-                        lines(xx$longitude, xx$latitude, col="grey")
+                        graphics::lines(xx$longitude, xx$latitude, col="grey")
                     }
                 }
             }
@@ -3826,7 +3914,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                     fuj_min <- 0
                     xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
                     if (!is.null(xx)) {
-                        lines(xx$longitude, xx$latitude, col="grey")
+                        graphics::lines(xx$longitude, xx$latitude, col="grey")
                     }         
                 }
             }
@@ -3848,7 +3936,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                     fuj_min <- 1
                     xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
                     if (!is.null(xx)) {
-                        lines(xx$longitude, xx$latitude, col="grey")
+                        graphics::lines(xx$longitude, xx$latitude, col="grey")
                     }         
                 }
             }
@@ -3870,7 +3958,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                     fuj_min <- 2
                     xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
                     if (!is.null(xx)) {
-                        lines(xx$longitude, xx$latitude, col="grey")
+                        graphics::lines(xx$longitude, xx$latitude, col="grey")
                     }         
                 }
             }
@@ -3892,7 +3980,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                     fuj_min <- 3
                     xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
                     if (!is.null(xx)) {
-                        lines(xx$longitude, xx$latitude, col="grey")
+                        graphics::lines(xx$longitude, xx$latitude, col="grey")
                     }         
                 }
             }
@@ -3914,7 +4002,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                     fuj_min <- 4
                     xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
                     if (!is.null(xx)) {
-                        lines(xx$longitude, xx$latitude, col="grey")
+                        graphics::lines(xx$longitude, xx$latitude, col="grey")
                     }
                 }         
             }
@@ -3936,7 +4024,7 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
                     fuj_min <- 5
                     xx <- get_track_lat_lon(hur_id, fuj_min, tt_all, kk)
                     if (!is.null(xx)) {
-                        lines(xx$longitude, xx$latitude, col="grey")
+                        graphics::lines(xx$longitude, xx$latitude, col="grey")
                     }         
                 }
             }

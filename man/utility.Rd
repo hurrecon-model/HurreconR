@@ -12,7 +12,16 @@ hurrecon_set_path(hur_path, console = TRUE)
 
 hurrecon_get_path(console = TRUE)
 
-hurrecon_create_land_water(nrows, ncols, xmn, xmx, ymn, ymx, console = TRUE)
+hurrecon_create_land_water(
+  nrows,
+  ncols,
+  xmn,
+  xmx,
+  ymn,
+  ymx,
+  console = TRUE,
+  hur_path = NULL
+)
 
 hurrecon_reformat_hurdat2(hurdat2_file, path = NULL, console = TRUE)
 
@@ -20,7 +29,8 @@ hurrecon_extract_tracks(
   margin = 0,
   wind_min = 33,
   status = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 }
 \arguments{
