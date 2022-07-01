@@ -132,6 +132,7 @@ summary.tif) are also calculated and saved to the region-all subdirectory.
 If returns is TRUE, summary values are returned.
 }
 \examples{
+hur_path <- system.file("", package="HurreconR", mustWork=TRUE)
 hurrecon_model_site(hur_id="AL1935-03", site_name="Miami FL", time_step=60, 
-save=FALSE, console=FALSE, hur_path="HurreconR")
+save=FALSE, console=FALSE, hur_path=hur_path)
 }

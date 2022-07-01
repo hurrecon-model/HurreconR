@@ -2053,8 +2053,9 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE,
 #' @return a data frame of results
 #' @export
 #' @examples
+#' hur_path <- system.file("", package="HurreconR", mustWork=TRUE)
 #' hurrecon_model_site(hur_id="AL1935-03", site_name="Miami FL", time_step=60, 
-#' save=FALSE, console=FALSE, hur_path="HurreconR")
+#' save=FALSE, console=FALSE, hur_path=hur_path)
 #' @rdname modeling
 
 hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1, 
