@@ -14,19 +14,11 @@
 #   License along with this program.  If not, see
 #   <http://www.gnu.org/licenses/>.
 
+###############################################################################
+
 # The HURRECON Model estimates wind speed, wind direction, enhanced Fujita 
 # scale wind damage, and duration of gale and hurricane winds as a function
-# of hurricane location and maximum wind speed.
-
-# Emery R. Boose
-# June 2022
-
-# R version 4.2.0
-
-# Required packages:
-#  raster
-#  rgdal
-
+# of hurricane location and maximum sustained wind speed.
 
 ### INTERNAL FUNCTIONS ####################################
 
@@ -49,38 +41,6 @@ get_path <- function() {
         hur_path <- hur_env[["hur_path"]]
         invisible(hur_path)
     }
-}
-
-#' get_operating_system returns the current operating system type
-#' (windows, osx, unix, linux, or unknown).
-#' @return operating system type
-#' @noRd
-
-get_operating_system <- function() {
-    if (!is.null(Sys.info())) {
-        os <- toString(Sys.info()['sysname'])
-        if (os == 'Darwin') {
-            os <- "osx"
-        }
-  
-    } else {
-        os <- .Platform$OS.type
-    
-        if (grepl("^darwin", R.version$os)) {
-            os <- "osx"
-        } else if (grepl("linux-gnu", R.version$os)) {
-            os <- "linux"
-        }
-    }
-  
-    os <- tolower(os)
-    os_types <- c("windows", "osx", "unix", "linux")
-
-    if (!(os %in% os_types)) {
-        os <- "unknown"
-    }
-
-    return(os)
 }
 
 #' get_fujita_wind_speeds returns a vector containing the minimum 3-second 
@@ -1208,7 +1168,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 
 #' get_regional_datetime calculates wind speed (meters/second), enhanced 
 #' Fujita scale, wind direction (degrees), and cardinal wind direction 
-#' (1-0)for a given hurricane over a region at a specified datetime. Results 
+#' (1-8) for a given hurricane over a region at a specified datetime. Results 
 #' are returned in a raster brick with 4 layers.
 #' @param hur_id hurricane id
 #' @param lat hurricane latitude (degrees)
@@ -1901,15 +1861,16 @@ hurrecon_reformat_hurdat2 <- function(hurdat2_file, path=NULL, console=TRUE) {
 #' hurrecon_extract_tracks extracts track data from an input track file
 #' (input_tracks.csv) created from HURDAT2 using hurrecon_reformat_hurdat2
 #' or created from other sources with the same file structure. The geographic 
-#' window used to select hurricanes is set by the land-water file and optionally
+#' window used to select hurricanes is set by the land-water file and is optionally
 #' extended by the margin parameter. Selection begins by identifying all positions
 #' in the window where winds reach or exceed hurricane speed (33 meters/second). 
 #' If at least one such position exists, the track is extended to include one 
-#' position before and one position after the first and last hurricane position, 
-#' if possible. If the resulting track contains at least two positions and the 
-#' maximum sustained wind speed equals or exceeds wind_min, the track is included.
-#' For included storms, summary data are written to ids.csv, track data are written 
-#' to tracks.csv, and track data for all positions are written to tracks_all.csv.
+#' position before and one position after the first and last hurricane position 
+#' in the window, if possible. If the resulting track contains at least two positions 
+#' and the maximum sustained wind speed equals or exceeds wind_min, the track is 
+#' included. For included storms, summary data are written to ids.csv, track data 
+#' are written to tracks.csv, and track data for all positions are written to 
+#' tracks_all.csv.
 #' @param margin an optional extension of the geographic window set by the
 #' land-water file (degrees)
 #' @param wind_min the minimum value of maximum sustained wind speed 
@@ -2205,9 +2166,9 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
 #' @description
 #' hurrecon_model_site_all creates a table of peak values for all hurricanes
 #' for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
-#' scaling parameter (s_par) for the given hurricane are used; otherwise values 
-#' for ALL are used. If save is TRUE, results are saved to a CSV file on the
-#' site-all subdirectory.
+#' scaling parameter (s_par) specified for each hurricane is used; otherwise 
+#' values for ALL are used. If save is TRUE, results are saved to a CSV file
+#' on the site-all subdirectory.
 #' @param site_name name of site
 #' @param width whether to use width parameters for the specified hurricane
 #' @param time_step time step (minutes)
@@ -2327,7 +2288,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
 #' enhanced Fujita scale, peak wind direction (degrees), peak cardinal wind 
 #' direction, and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds (minutes)
 #' for a given hurricane over a region. If width is TRUE, the radius of maximum 
-#' wind (rmw) and scaling parameter (s_par) for the given hurricane are used; 
+#' wind (rmw) and scaling parameter (s_par) specified for each hurricane is used; 
 #' otherwise values for ALL are used. If time_step is NULL, the time step is 
 #' calculated. If water is FALSE, results are calculated for land areas only. 
 #' If save is TRUE, results are saved as a GeoTiff file on the region subdirectory.
@@ -2404,9 +2365,9 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
 #' @description
 #' hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
 #' Fujita scale, wind direction (degrees), and cardinal wind direction for a
-#' given hurricane over a region at a specified datetime. If width is
-#' TRUE, the radius of maximum wind (rmw) (kilometers) and scaling parameter 
-#' (s_par) for this hurricane are used; otherwise values for ALL are used. 
+#' given hurricane over a region at a specified datetime. If width is TRUE, 
+#' the radius of maximum wind (rmw) (kilometers) and scaling parameter (s_par) 
+#  specified for the hurricane are used; otherwise values for ALL are used. 
 #' If water is FALSE, results are calculated for land areas only. If save is 
 #' TRUE, results are saved as a GeoTiff file on the region-dt subdirectory.
 #' @param hur_id hurricane id
@@ -2467,10 +2428,10 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 #' peak enhanced Fujita scale, peak wind direction (degrees), peak cardinal 
 #' wind direction, duration of gale winds (minutes), and duration of hurricane
 #' winds (minutes) over a region for all hurricanes. If width is TRUE, the 
-#' radius of maximum wind (rmw) and scaling parameter (s_par) for the given 
-#' hurricane are used; otherwise values for ALL are used. If time_step is NULL,
-#' the time step is calculated. If water is FALSE, results are calculated for 
-#' land areas only. Results for each hurricane are saved in a GeoTiff file on 
+#' radius of maximum wind (rmw) and scaling parameter (s_par) specified for 
+#' each hurricane is used; otherwise values for ALL are used. If time_step is 
+#' NULL, the time step is calculated. If water is FALSE, results are calculated 
+#' for land areas only. Results for each hurricane are saved in a GeoTiff file on 
 #' the region-all subdirectory. Summary results for all hurricanes (summary.csv,
 #' summary.tif) are also calculated and saved to the region-all subdirectory. 
 #' If returns is TRUE, summary values are returned.
