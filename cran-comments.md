@@ -1,5 +1,5 @@
-## Submission
-This is a new submission to CRAN.
+## Resubmission
+Example was updated to remove error.
 
 ## R CMD check results
 There were no ERRORS or WARNINGs.
