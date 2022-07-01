@@ -1,2 +1,8 @@
-hurdat2_ids.csv
-hurdat2_tracks.csv
+^.*\.Rproj$
+^\.Rproj\.user$
+.gitignore
+.*\.tar\.gz
+cran-comments.md
+^\.github$
+^doc$
+^Meta$

@@ -1,3 +1,13 @@
+---
+title: "Overview of HurreconR"
+date: "1 July 2022"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Overview of HurreconR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 ## HURRECON Model
 
 The HURRECON model estimates wind speed, wind direction, enhanced Fujita scale
@@ -6,17 +16,14 @@ and maximum sustained wind speed. Results may be generated for a single site or
 an entire region. Hurricane track and intensity data may be imported directly 
 from the US National Hurricane Center's HURDAT2 database.
 
-HURRECON is available in both R (HurreconR) and Python (HurreconPython) versions. 
 The model is an updated version of the original HURRECON model written in Borland 
 Pascal for use with Idrisi (see below for details).
-
-Please note: both versions are currently under development and subject to change.
 
 ## Getting Started
 
 Here are the basic steps for using the model. Please see below for more details.
 
-1. Download the R or Python version of the model from GitHub.
+1. Install and load the R package for the model (HurreconR).
 2. Create a directory for a set of related model runs with subdirectories for input 
 and output files (as described below).
 3. Create a site file (<i>sites.csv</i>) with geographic coordinates for one or more 
@@ -111,20 +118,10 @@ particular set of model runs. This function uses the input tracks file and the
 land-water file to create input files (<i>ids.csv</i>, <i>tracks.csv</i>, 
 <i>tracks-all.csv</i>) required for the <i>hurrecon_model</i> functions.
 
-Examples of input files may be found on the <i>inst/input</i> subdirectory (R) or 
-<i>data</i> subdirectory (Python).
+Examples of input files may be found on the <i>inst/input</i> subdirectory.
 
 To run the model, create the above directories, copy the input files to their
-respective subdirectories, and run <i>hurrecon.R</i> (R) or <i>hurrecon.py</i> (Python). 
-
-The R version may also be installed as an R package using the devtools package:
-
-```
-devtools::install_github("hurrecon-model/HurreconR")
-```
-
-This has the advantage of providing readily accessible help messages for each 
-function.
+respective subdirectories, and use the library function to load HurreconR.
 
 ## Model Functions
 

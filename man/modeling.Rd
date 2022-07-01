@@ -14,7 +14,8 @@ hurrecon_model_site(
   width = FALSE,
   time_step = 1,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_site_all(
@@ -22,7 +23,8 @@ hurrecon_model_site_all(
   width = FALSE,
   time_step = 1,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_region(
@@ -31,7 +33,8 @@ hurrecon_model_region(
   time_step = NULL,
   water = FALSE,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_region_dt(
@@ -40,7 +43,8 @@ hurrecon_model_region_dt(
   width = FALSE,
   water = FALSE,
   save = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_model_region_all(
@@ -48,7 +52,8 @@ hurrecon_model_region_all(
   time_step = NULL,
   water = FALSE,
   console = TRUE,
-  returns = FALSE
+  returns = FALSE,
+  hur_path = NULL
 )
 }
 \arguments{
@@ -63,6 +68,8 @@ hurrecon_model_region_all(
 \item{save}{whether to save results to a GeoTiff file}
 
 \item{console}{whether to display messages in console}
+
+\item{hur_path}{path for current set of model runs}
 
 \item{water}{whether to calculate results over water}
 
@@ -92,24 +99,23 @@ saved to a CSV file on the site subdirectory.
 
 hurrecon_model_site_all creates a table of peak values for all hurricanes
 for a given site. If width is TRUE, the radius of maximum wind (rmw) and 
-scaling parameter (s_par) for the given hurricane are used; otherwise values 
-for ALL are used. If save is TRUE, results are saved to a CSV file on the
-site-all subdirectory.
+scaling parameter (s_par) specified for each hurricane is used; otherwise 
+values for ALL are used. If save is TRUE, results are saved to a CSV file
+on the site-all subdirectory.
 
 hurrecon_model_region calculates peak wind speed (meters/second), peak 
 enhanced Fujita scale, peak wind direction (degrees), peak cardinal wind 
 direction, and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds (minutes)
 for a given hurricane over a region. If width is TRUE, the radius of maximum 
-wind (rmw) and scaling parameter (s_par) for the given hurricane are used; 
+wind (rmw) and scaling parameter (s_par) specified for each hurricane is used; 
 otherwise values for ALL are used. If time_step is NULL, the time step is 
 calculated. If water is FALSE, results are calculated for land areas only. 
 If save is TRUE, results are saved as a GeoTiff file on the region subdirectory.
 
 hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
 Fujita scale, wind direction (degrees), and cardinal wind direction for a
-given hurricane over a region at a specified datetime. If width is
-TRUE, the radius of maximum wind (rmw) (kilometers) and scaling parameter 
-(s_par) for this hurricane are used; otherwise values for ALL are used. 
+given hurricane over a region at a specified datetime. If width is TRUE, 
+the radius of maximum wind (rmw) (kilometers) and scaling parameter (s_par) 
 If water is FALSE, results are calculated for land areas only. If save is 
 TRUE, results are saved as a GeoTiff file on the region-dt subdirectory.
 
@@ -117,11 +123,15 @@ hurrecon_model_region_all calculates peak wind speed (meters/second),
 peak enhanced Fujita scale, peak wind direction (degrees), peak cardinal 
 wind direction, duration of gale winds (minutes), and duration of hurricane
 winds (minutes) over a region for all hurricanes. If width is TRUE, the 
-radius of maximum wind (rmw) and scaling parameter (s_par) for the given 
-hurricane are used; otherwise values for ALL are used. If time_step is NULL,
-the time step is calculated. If water is FALSE, results are calculated for 
-land areas only. Results for each hurricane are saved in a GeoTiff file on 
+radius of maximum wind (rmw) and scaling parameter (s_par) specified for 
+each hurricane is used; otherwise values for ALL are used. If time_step is 
+NULL, the time step is calculated. If water is FALSE, results are calculated 
+for land areas only. Results for each hurricane are saved in a GeoTiff file on 
 the region-all subdirectory. Summary results for all hurricanes (summary.csv,
 summary.tif) are also calculated and saved to the region-all subdirectory. 
 If returns is TRUE, summary values are returned.
+}
+\examples{
+hurrecon_model_site(hur_id="AL1935-03", site_name="Miami FL", time_step=60, 
+save=FALSE, console=FALSE, hur_path="HurreconR")
 }

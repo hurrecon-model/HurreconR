@@ -12,7 +12,16 @@ hurrecon_set_path(hur_path, console = TRUE)
 
 hurrecon_get_path(console = TRUE)
 
-hurrecon_create_land_water(nrows, ncols, xmn, xmx, ymn, ymx, console = TRUE)
+hurrecon_create_land_water(
+  nrows,
+  ncols,
+  xmn,
+  xmx,
+  ymn,
+  ymx,
+  console = TRUE,
+  hur_path = NULL
+)
 
 hurrecon_reformat_hurdat2(hurdat2_file, path = NULL, console = TRUE)
 
@@ -20,7 +29,8 @@ hurrecon_extract_tracks(
   margin = 0,
   wind_min = 33,
   status = TRUE,
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 }
 \arguments{
@@ -87,13 +97,14 @@ facilitate sorting by year.
 hurrecon_extract_tracks extracts track data from an input track file
 (input_tracks.csv) created from HURDAT2 using hurrecon_reformat_hurdat2
 or created from other sources with the same file structure. The geographic 
-window used to select hurricanes is set by the land-water file and optionally
+window used to select hurricanes is set by the land-water file and is optionally
 extended by the margin parameter. Selection begins by identifying all positions
 in the window where winds reach or exceed hurricane speed (33 meters/second). 
 If at least one such position exists, the track is extended to include one 
-position before and one position after the first and last hurricane position, 
-if possible. If the resulting track contains at least two positions and the 
-maximum sustained wind speed equals or exceeds wind_min, the track is included.
-For included storms, summary data are written to ids.csv, track data are written 
-to tracks.csv, and track data for all positions are written to tracks_all.csv.
+position before and one position after the first and last hurricane position 
+in the window, if possible. If the resulting track contains at least two positions 
+and the maximum sustained wind speed equals or exceeds wind_min, the track is 
+included. For included storms, summary data are written to ids.csv, track data 
+are written to tracks.csv, and track data for all positions are written to 
+tracks_all.csv.
 }

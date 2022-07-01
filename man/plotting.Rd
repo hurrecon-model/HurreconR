@@ -19,7 +19,8 @@ hurrecon_plot_site(
   adjust = FALSE,
   legend_loc = "topright",
   title = "",
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_plot_site_all(
@@ -29,7 +30,8 @@ hurrecon_plot_site_all(
   var = "wind_speed",
   legend_loc = "topright",
   title = "",
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_plot_tracks(
@@ -37,7 +39,8 @@ hurrecon_plot_tracks(
   wind_min = 33,
   title = "",
   colormap = "default",
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_plot_region(
@@ -47,7 +50,8 @@ hurrecon_plot_region(
   positions = FALSE,
   title = "",
   colormap = "default",
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_plot_region_dt(
@@ -57,7 +61,8 @@ hurrecon_plot_region_dt(
   positions = FALSE,
   title = "",
   colormap = "default",
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 
 hurrecon_plot_region_all(
@@ -65,7 +70,8 @@ hurrecon_plot_region_all(
   tracks = FALSE,
   title = "",
   colormap = "default",
-  console = TRUE
+  console = TRUE,
+  hur_path = NULL
 )
 }
 \arguments{
@@ -89,6 +95,8 @@ greater than 180 degrees in scatter plot}
 \item{title}{optional title}
 
 \item{console}{whether to display messages in console}
+
+\item{hur_path}{path for current set of model runs}
 
 \item{start_year}{optional start year}
 

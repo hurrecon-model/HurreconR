@@ -6,14 +6,16 @@
 \alias{hurrecon_summarize_site}
 \title{Summarizing Functions}
 \usage{
-hurrecon_summarize_land_water(console = TRUE)
+hurrecon_summarize_land_water(console = TRUE, hur_path = NULL)
 
-hurrecon_summarize_tracks(console = TRUE)
+hurrecon_summarize_tracks(console = TRUE, hur_path = NULL)
 
-hurrecon_summarize_site(hur_id, site_name, console = TRUE)
+hurrecon_summarize_site(hur_id, site_name, console = TRUE, hur_path = NULL)
 }
 \arguments{
 \item{console}{whether to display results in console}
+
+\item{hur_path}{path for current set of model runs}
 
 \item{hur_id}{hurricane id}
 
