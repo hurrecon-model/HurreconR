@@ -53,17 +53,17 @@ and output files are stored on the following subdirectories of this path:
 ```
 hur_path/input
 hur_path/region
-hur_path/region-dt
 hur_path/region-all
+hur_path/region-dt
 hur_path/site
 hur_path/site-all
 hur_path/vector
 ```
 
-The input subdirectory contains input files. The site and region subdirectories
+The <i>input</i> subdirectory contains input files. The <i>site</i> and <i>region</i> subdirectories
 contain site and regional output files, respectively. Shapefiles that contain
 geographic and political boundaries for viewing regional results are stored on the 
-vector subdirectory.
+<i>vector</i> subdirectory.
 
 The following input files are required:
 
@@ -75,14 +75,14 @@ parameters.csv
 input_tracks.csv
 ```
 
-All input files (except boundary files) are located on the input subdirectory.
+All input files (except boundary files) are located on the <i>input</i> subdirectory.
 
 The sites file contains the name, location, and cover type (water = 1, land = 2)
 of each study site. Variables: <i>site_name</i>, <i>latitude</i>, <i>longitude</i>, 
 <i>cover_type</i>.
 
 The boundary files are vector shapefiles that are used for creating maps of regional
-results. These files are located on the vector subdirectory.
+results. These files are located on the <i>vector</i> subdirectory.
 
 The land-water file is a raster GeoTiff file that specifies the cover type 
 (water = 1, land = 2) for each cell across a region. The geographic coordinates 
@@ -104,7 +104,7 @@ each hurricane for a given set of model runs. Variables: <i>hur_id</i>, <i>name<
 The input tracks file may be created directly from HURDAT2. Use the 
 <i>hurrecon_reformat_hurdat2</i> function to reformat a HUTDAT2 file as 
 <i>hurdat2_tracks.csv</i>, rename this file to <i>input_tracks.csv</i>, and copy this 
-file to the input subdirectory.
+file to the <i>input</i> subdirectory.
 
 The <i>hurrecon_extract_tracks</i> function is used to extract the data needed for a 
 particular set of model runs. This function uses the input tracks file and the 
@@ -178,11 +178,11 @@ The <i>hurrecon_model</i> functions generate output for a single hurricane and a
 single site (all datetimes), all hurricanes for a single site (peak values), 
 a single hurricane for a specified geographic region (peak values or specified
 datetime), and all hurricanes for a specified geographic region (peak values).
-If save is TRUE (default), results are written to the site, site-all, region, 
-region-dt, or region-all subdirectory as CSV or GeoTiff files. The default 
-time step for site results is 1 minute. The default time step for regional 
-results is calculated as the time required to traverse one cell in the 
-vertical direction at 20 meters per second, rounded to one of these values:
+If save is TRUE (default), results are written to the <i>site</i>, <i>site-all</i>, 
+<i>region</i>, <i>region-all</i>, or <i>region-dt</i> subdirectory as CSV or GeoTiff
+files. The default time step for site results is 1 minute. The default time step 
+for regional results is calculated as the time required to traverse one cell in
+the vertical direction at 20 meters per second, rounded to one of these values:
 1, 2, 3, 5, 10, 15, 30, or 60 minutes.
 
 The <i>hurrecon_summarize_land_water</i> function displays information about the current
@@ -202,9 +202,9 @@ Sample commands for the 1935 Florida Keys hurricane and Miami FL:
 
 ```
 hurrecon_reformat_hurdat2(hurdat2_file="hurdat2-1851-2021-041922.txt")
-[copy hurdat2_tracks.csv to input_tracks.cvs on input directory]
+[copy hurdat2_tracks.csv to input_tracks.csv on input directory]
 
-hurrecon_set_path("c:/hurrecon/r/east_30km")
+hurrecon_set_path("c:/hurrecon/east_20km")
 hurrecon_get_path()
 
 hurrecon_create_land_water(nrows=150, ncols=180, xmn=-100, xmx=-59, ymn=23, ymx=50)
