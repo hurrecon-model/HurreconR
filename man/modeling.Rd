@@ -13,8 +13,8 @@ hurrecon_model_site(
   site_name,
   width = FALSE,
   time_step = 1,
+  msg = TRUE,
   save = TRUE,
-  console = TRUE,
   hur_path = NULL
 )
 
@@ -23,7 +23,6 @@ hurrecon_model_site_all(
   width = FALSE,
   time_step = 1,
   save = TRUE,
-  console = TRUE,
   hur_path = NULL
 )
 
@@ -32,8 +31,8 @@ hurrecon_model_region(
   width = FALSE,
   time_step = NULL,
   water = FALSE,
+  msg = TRUE,
   save = TRUE,
-  console = TRUE,
   hur_path = NULL
 )
 
@@ -43,7 +42,6 @@ hurrecon_model_region_dt(
   width = FALSE,
   water = FALSE,
   save = TRUE,
-  console = TRUE,
   hur_path = NULL
 )
 
@@ -51,8 +49,7 @@ hurrecon_model_region_all(
   width = FALSE,
   time_step = NULL,
   water = FALSE,
-  console = TRUE,
-  returns = FALSE,
+  save = TRUE,
   hur_path = NULL
 )
 }
@@ -65,17 +62,15 @@ hurrecon_model_region_all(
 
 \item{time_step}{time step (minutes)}
 
-\item{save}{whether to save results to a GeoTiff file}
+\item{msg}{whether to use message to display progress}
 
-\item{console}{whether to display messages in console}
+\item{save}{whether to save results to file}
 
 \item{hur_path}{path for current set of model runs}
 
 \item{water}{whether to calculate results over water}
 
 \item{dt}{datetime in the format YYYY-MM-DDThh:mm}
-
-\item{returns}{whether to return summary values}
 }
 \value{
 a data frame of results
@@ -86,8 +81,7 @@ a brick of 6 rasters
 
 a brick of 4 rasters
 
-a list containing a data frame and a raster brick if return_value 
-is TRUE
+a list containing a data frame and a raster brick of summary values
 }
 \description{
 hurrecon_model_site calculates wind speed (meters/second), gust speed 
@@ -126,13 +120,13 @@ winds (minutes) over a region for all hurricanes. If width is TRUE, the
 radius of maximum wind (rmw) and scaling parameter (s_par) specified for 
 each hurricane is used; otherwise values for ALL are used. If time_step is 
 NULL, the time step is calculated. If water is FALSE, results are calculated 
-for land areas only. Results for each hurricane are saved in a GeoTiff file on 
-the region-all subdirectory. Summary results for all hurricanes (summary.csv,
-summary.tif) are also calculated and saved to the region-all subdirectory. 
-If returns is TRUE, summary values are returned.
+for land areas only. If save is TRUE, intermediate results for each hurricane 
+are saved as GeoTiff files on the region-all subdirectory, along with summary 
+results for all hurricanes (summary.csv, summary.tif). If save is FALSE,
+intermediate results are saved to the R session temporary directory.
 }
 \examples{
 hur_path <- system.file("", package="HurreconR", mustWork=TRUE)
 hurrecon_model_site(hur_id="AL1935-03", site_name="Miami FL", time_step=60, 
-save=FALSE, console=FALSE, hur_path=hur_path)
+msg=FALSE, save=FALSE, hur_path=hur_path)
 }

@@ -1,7 +1,7 @@
 Package: HurreconR
 Title: Models Hurricane Wind Speed, Wind Direction, and Wind Damage
 Version: 1.0
-Date: 2022-07-03
+Date: 2022-07-06
 Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
                       email = "boose@fas.harvard.edu"),
               person("President and Fellows of Harvard College", role = "cph"))
@@ -10,7 +10,10 @@ Description: The HURRECON model estimates wind speed, wind direction, enhanced
     of hurricane location and maximum sustained wind speed. Results may be 
     generated for a single site or an entire region. Hurricane track and 
     intensity data may be imported directly from the US National Hurricane 
-    Center's HURDAT2 database.
+    Center's HURDAT2 database. For details on the original version of the 
+    model written in Borland Pascal, see: Boose, Chamberlin, and Foster (2001) 
+    <doi:10.1890/0012-9615(2001)071[0027:LARIOH]2.0.CO;2> and Boose, Serrano, 
+    and Foster (2004) <doi:10.1890/02-4057>.
 Depends: R (>= 4.0.0)
 License: GPL-3
 Encoding: UTF-8
