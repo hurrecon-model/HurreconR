@@ -8,9 +8,9 @@
 \alias{hurrecon_extract_tracks}
 \title{Utility Functions}
 \usage{
-hurrecon_set_path(hur_path, console = TRUE)
+hurrecon_set_path(hur_path)
 
-hurrecon_get_path(console = TRUE)
+hurrecon_get_path()
 
 hurrecon_create_land_water(
   nrows,
@@ -19,24 +19,22 @@ hurrecon_create_land_water(
   xmx,
   ymn,
   ymx,
-  console = TRUE,
+  save = TRUE,
   hur_path = NULL
 )
 
-hurrecon_reformat_hurdat2(hurdat2_file, path = NULL, console = TRUE)
+hurrecon_reformat_hurdat2(path, hurdat2_file, save = TRUE)
 
 hurrecon_extract_tracks(
   margin = 0,
   wind_min = 33,
   status = TRUE,
-  console = TRUE,
+  save = TRUE,
   hur_path = NULL
 )
 }
 \arguments{
 \item{hur_path}{path for current set of model runs}
-
-\item{console}{whether to display messages in console}
 
 \item{nrows}{number of rows}
 
@@ -50,9 +48,11 @@ hurrecon_extract_tracks(
 
 \item{ymx}{maximum latitude (degrees)}
 
-\item{hurdat2_file}{name of HURDAT2 file}
+\item{save}{whether to save results to CSV files}
 
-\item{path}{optional path for input & output files}
+\item{path}{path for input & output files}
+
+\item{hurdat2_file}{name of HURDAT2 file}
 
 \item{margin}{an optional extension of the geographic window set by the
 land-water file (degrees)}
@@ -67,11 +67,11 @@ no return value
 
 current path
 
-no return value
+land-water raster
 
-no return value
+a data frame of track data
 
-no return value
+a list of three track-related data frames
 }
 \description{
 hurrecon_set_path sets the path for the current set of model runs.
@@ -92,7 +92,8 @@ Hurricane Center for use with the HURRECON model. The input file is assumed
 to be in space-delimited text format. The output file (hurdat2_tracks.csv)
 contains full track information for each hurricane plus columns for standard 
 datetime and Julian day with fraction. Hurricane IDs are reformatted to
-facilitate sorting by year.
+facilitate sorting by year. The user must specify the path and the name
+of the HURDAT2 file.
 
 hurrecon_extract_tracks extracts track data from an input track file
 (input_tracks.csv) created from HURDAT2 using hurrecon_reformat_hurdat2

@@ -60,10 +60,10 @@ hur_path/site-all
 hur_path/vector
 ```
 
-The <i>input</i> subdirectory contains input files. The <i>site</i> and <i>region</i> subdirectories
-contain site and regional output files, respectively. Shapefiles that contain
-geographic and political boundaries for viewing regional results are stored on the 
-<i>vector</i> subdirectory.
+The <i>input</i> subdirectory contains input files. The <i>site</i> and <i>region</i> 
+subdirectories contain site and regional output files, respectively. Shapefiles that 
+contain geographic and political boundaries for viewing regional results are stored 
+on the <i>vector</i> subdirectory.
 
 The following input files are required:
 
@@ -202,7 +202,7 @@ Sample commands for the 1935 Florida Keys hurricane and Miami FL:
 
 ```
 hurrecon_reformat_hurdat2(hurdat2_file="hurdat2-1851-2021-041922.txt")
-[copy hurdat2_tracks.csv to input_tracks.csv on input directory]
+[copy hurdat2_tracks.csv to input_tracks.csv on input subdirectory]
 
 hurrecon_set_path("c:/hurrecon/east_20km")
 hurrecon_get_path()
@@ -285,9 +285,10 @@ impacts of historical hurricanes in New England and Puerto Rico:
 
 * Boose, E. R., Chamberlin, K. E., Foster, D. R. 2001. Landscape and regional impacts 
 of hurricanes in New England. Ecological Monographs 71: 27-48.
+doi:10.1890/0012-9615(2001)071[0027:LARIOH]2.0.CO;2.
 
 * Boose, E. R., Serrano, M. I., Foster, D. R. 2004. Landscape and regional impacts of 
-hurricanes in Puerto Rico. Ecological Monographs 74: 335-352.
+hurricanes in Puerto Rico. Ecological Monographs 74: 335-352. doi:10.1890/02-4057.
 
 New features in the updated version of HURRECON include support for: (1) estimating 
 wind damage on the enhanced Fujita scale, (2) importing hurricane track and intensity 
