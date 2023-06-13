@@ -1,7 +1,7 @@
 Package: HurreconR
 Title: Models Hurricane Wind Speed, Wind Direction, and Wind Damage
-Version: 1.0
-Date: 2022-07-06
+Version: 1.1
+Date: 2023-06-12
 Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
                       email = "boose@fas.harvard.edu"),
               person("President and Fellows of Harvard College", role = "cph"))
@@ -21,8 +21,7 @@ LazyData: true
 Imports: 
     graphics,
     grDevices,
-    raster,
-    rgdal,
+    terra,
     utils
 Suggests: 
     knitr,
@@ -31,6 +30,6 @@ Suggests:
     rmarkdown
 URL: https://github.com/hurrecon-model/HurreconR
 BugReports: https://github.com/hurrecon-model/hurreconR/issues
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr
 Config/testthat/edition: 3

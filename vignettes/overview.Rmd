@@ -1,6 +1,6 @@
 ---
 title: "Overview of HurreconR"
-date: "6 July 2022"
+date: "12 June 2023"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Overview of HurreconR}
@@ -60,8 +60,8 @@ and output files are stored on the following subdirectories of this path:
 ```
 hur_path/input
 hur_path/region
-hur_path/region-all
 hur_path/region-dt
+hur_path/region-all
 hur_path/site
 hur_path/site-all
 hur_path/vector
@@ -121,7 +121,7 @@ land-water file to create input files (<i>ids.csv</i>, <i>tracks.csv</i>,
 Examples of input files may be found on the <i>inst/input</i> subdirectory.
 
 To run the model, create the above directories, copy the input files to their
-respective subdirectories, and use the <i>library</i> function to load HurreconR.
+respective subdirectories, and use the library function to load HurreconR.
 
 ## Model Functions
 
@@ -143,6 +143,7 @@ hurrecon_model_region_all
 hurrecon_summarize_land_water
 hurrecon_summarize_tracks
 hurrecon_summarize_site
+hurrecon_summarize_region
 
 hurrecon_plot_site
 hurrecon_plot_site_all
@@ -176,16 +177,17 @@ single site (all datetimes), all hurricanes for a single site (peak values),
 a single hurricane for a specified geographic region (peak values or specified
 datetime), and all hurricanes for a specified geographic region (peak values).
 If save is TRUE (default), results are written to the <i>site</i>, <i>site-all</i>, 
-<i>region</i>, <i>region-all</i>, or <i>region-dt</i> subdirectory as CSV or GeoTiff 
-files. The default time step for site results is 1 minute. The default time step 
-for regional results is calculated as the time required to traverse one cell in 
-the vertical direction at 20 meters per second, rounded to one of these values:
+<i>region</i>, <i>region-dt</i>, or <i>region-all</i> subdirectory as CSV or GeoTiff 
+files. The default time step for site results is 1 minute. The default time step for 
+regional results is calculated as the time required to traverse one cell in the 
+vertical direction at 20 meters per second, rounded to one of these values:
 1, 2, 3, 5, 10, 15, 30, or 60 minutes.
 
 The <i>hurrecon_summarize_land_water</i> function displays information about the current
 land-water file. The <i>hurrecon_summarize_tracks</i> function displays information about
 the current track files. The <i>hurrecon_summarize_site</i> function displays peak values 
-for a single hurricane and a single site.
+for a single hurricane and a single site. The <i>hurrecon_summarize_region</i> function
+summarizes regional output for a single hurricane.
 
 The <i>hurrecon_plot_site</i> functions create time-series and scatter plots for a single 
 hurricane and time-series plots for all hurricanes for a given site. The 
@@ -198,13 +200,13 @@ for a single hurricane or for all hurricanes.
 Sample commands for the 1935 Florida Keys hurricane and Miami FL:
 
 ```
-hurrecon_reformat_hurdat2(hurdat2_file="hurdat2-1851-2021-041922.txt")
-[copy hurdat2_tracks.csv to input_tracks.csv on input subdirectory]
+hurrecon_reformat_hurdat2(hurdat2_file="hurdat2-1851-2022-050423.txt")
+[copy hurdat2_tracks.csv to input_tracks.cvs on input directory]
 
 hurrecon_set_path("c:/hurrecon/east_20km")
 hurrecon_get_path()
 
-hurrecon_create_land_water(nrows=150, ncols=180, xmn=-100, xmx=-59, ymn=23, ymx=50)
+hurrecon_create_land_water(nrows=150, ncols=180, xmin=-100, xmax=-59, ymin=23, ymax=50)
 hurrecon_extract_tracks(wind_min=70)
 
 hurrecon_model_site("AL1935-03", "Miami FL")
@@ -216,6 +218,7 @@ hurrecon_model_region_all()
 hurrecon_summarize_land_water()
 hurrecon_summarize_tracks()
 hurrecon_summarize_site("AL1935-03", "Miami FL")
+hurrecon_summarize_region("AL1935-03")
 
 hurrecon_plot_site("AL1935-03", "Miami FL")
 hurrecon_plot_site_all("Miami FL")
@@ -282,10 +285,9 @@ impacts of historical hurricanes in New England and Puerto Rico:
 
 * Boose, E. R., Chamberlin, K. E., Foster, D. R. 2001. Landscape and regional impacts 
 of hurricanes in New England. Ecological Monographs 71: 27-48.
-doi.org/10.1890/0012-9615(2001)071[0027:LARIOH]2.0.CO;2.
 
 * Boose, E. R., Serrano, M. I., Foster, D. R. 2004. Landscape and regional impacts of 
-hurricanes in Puerto Rico. Ecological Monographs 74: 335-352. doi.org/10.1890/02-4057.
+hurricanes in Puerto Rico. Ecological Monographs 74: 335-352.
 
 New features in the updated version of HURRECON include support for: (1) estimating 
 wind damage on the enhanced Fujita scale, (2) importing hurricane track and intensity 

@@ -15,10 +15,10 @@ hurrecon_get_path()
 hurrecon_create_land_water(
   nrows,
   ncols,
-  xmn,
-  xmx,
-  ymn,
-  ymx,
+  xmin,
+  xmax,
+  ymin,
+  ymax,
   save = TRUE,
   hur_path = NULL
 )
@@ -40,13 +40,13 @@ hurrecon_extract_tracks(
 
 \item{ncols}{number of columns}
 
-\item{xmn}{minimum longitude (degrees)}
+\item{xmin}{minimum longitude (degrees)}
 
-\item{xmx}{maximum longitude (degrees)}
+\item{xmax}{maximum longitude (degrees)}
 
-\item{ymn}{minimum latitude (degrees)}
+\item{ymin}{minimum latitude (degrees)}
 
-\item{ymx}{maximum latitude (degrees)}
+\item{ymax}{maximum latitude (degrees)}
 
 \item{save}{whether to save results to CSV files}
 
@@ -83,9 +83,9 @@ format from boundary files in shapefile format. The land-water file
 (land_water.tif) is assumed to be aligned with lines of latitude and 
 longitude.  Boundary files are assumed to be named boundary.* on the vector 
 subdirectory. This function requires a reclasification file (reclassify.csv)
-with 3 columns (from, to, becomes) on the vector subdirectory. For more details,
-see documentation for the R raster and reclassify functions. The land-water
-file is created on the input subdirectory.
+on the vector subdirectory. For more details, see documentation for the 
+terra::classify function. The land-water file is created on the input 
+subdirectory with the following values: 1=water, 2=land.
 
 hurrecon_reformat_hurdat2 reformats a HURDAT2 file from the National 
 Hurricane Center for use with the HURRECON model. The input file is assumed

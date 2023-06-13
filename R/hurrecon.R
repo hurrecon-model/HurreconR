@@ -28,12 +28,12 @@
 
 hur_env <- new.env(parent=emptyenv())
 
-#' get_path returns the path for the current set of model runs.
+#' get_hur_path returns the path for the current set of model runs.
 #' If not set, an error message is displayed.
 #' @return current path
 #' @noRd
 
-get_path <- function() {
+get_hur_path <- function() {
     # display error message if not set
     if (!exists("hur_path", envir=hur_env)) {
         stop("Path not set. Please use hurrecon_set_path.", call. = FALSE)
@@ -43,6 +43,43 @@ get_path <- function() {
         hur_path <- hur_env[["hur_path"]]
         invisible(hur_path)
     }
+}
+
+check_file_exists <- function(file_name) {
+    if (file.exists(file_name) == FALSE) {  
+        stop("File not found: ", file_name, call. = FALSE)
+    }
+}
+
+#' check_legend_location checks if the specified legend location is valid.
+#' @param loc legend location
+#' @return TRUE or FALSE
+#' @noRd
+
+check_legend_location <- function(loc) {
+    locations <- c("topleft", "topright", "bottomleft", "bottomright")
+
+    return (is.element(loc, locations))
+}
+
+#' check_raster_value checks to see if the specified raster layer
+#' contains the specified value.
+#' @param raster name of raster
+#' @param layer number of layer
+#' @param value value to check
+#' @return whether raster layer contains value (TRUE or FALSE)
+#' @noRd
+
+check_raster_value <- function(raster, layer, value) {
+    vv <- terra::unique(raster[[layer]])
+    
+    for (i in 1:nrow(vv)) {
+        if (vv[i, 1] == value) {
+            return(TRUE)
+        }
+    }
+
+    return(FALSE)
 }
 
 #' get_fujita_wind_speeds returns a vector containing the minimum 3-second 
@@ -135,17 +172,6 @@ format_time_difference_ms <- function(start_time, end_time) {
 #' @return no return value
 #' @noRd
 
-check_file_exists <- function(file_name) {
-    if (file.exists(file_name) == FALSE) {  
-        stop("File not found: ", file_name, call. = FALSE)
-    }
-}
-
-#' check_graphics_legend_location checks if the specified legend location is valid.
-#' @param loc legend location
-#' @return TRUE or FALSE
-#' @noRd
-
 check_legend_location <- function(loc) {
     locations <- c("topleft", "topright", "bottomleft", "bottomright")
 
@@ -161,7 +187,7 @@ check_legend_location <- function(loc) {
 
 read_site_file <- function(site_name) {
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read site file
     site_file <- paste(hur_path, "/input/sites.csv", sep="")
@@ -195,7 +221,7 @@ read_site_file <- function(site_name) {
 
 read_parameter_file <- function(hur_id, width) {
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read parameter file
     par_file <- paste(hur_path, "/input/parameters.csv", sep="")
@@ -261,17 +287,17 @@ get_fixed_model_parameters <- function(cover_type) {
 
 get_time_step <- function() {
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read land-water file
     land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
-    land_water <- raster::raster(land_water_file)
+    land_water <- terra::rast(land_water_file)
 
-    # get cell height in meters (at latitude  45 degrees)
-    nrows <- dim(land_water)[1]
-    lat_min <- raster::extent(land_water)[3]
-    lat_max <- raster::extent(land_water)[4]
+    # get cell height in meters (at latitude 45 degrees)
+    nrows <- terra::nrow(land_water)
+    lat_min <- terra::ext(land_water)[3]
+    lat_max <- terra::ext(land_water)[4]
     cell_y <- 111132 * (lat_max - lat_min)/nrows
 
     # calculate time step
@@ -306,13 +332,12 @@ get_time_step <- function() {
 
 read_hurricane_track_file <- function(hur_id) {
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read hurricane track file
-    read_hurricane_track_file
     track_file <- paste(hur_path, "/input/tracks.csv", sep="")
     check_file_exists(track_file)
-    zz <-utils::read.csv(track_file, header=TRUE)
+    zz <- utils::read.csv(track_file, header=TRUE)
     names(zz)[1] <- "hur_id"
 
     # subset by hurricane name
@@ -375,29 +400,6 @@ interpolate_hurricane_location_max_wind <- function(tt, time_step) {
     yr_vec <- rep(year, times=length(jd_vec))
 
     return(list(yr_vec, jd_vec, lat_vec, lon_vec, wmax_vec))
-}
-
-#' estimate_range uses the Pythagorean equation to estimate the range 
-#' (kilometers) from one point to another based on the latitude & longitude 
-#' of each point. Note: overestimates range unless both points are on the 
-#' same meridian.
-#' @param lat1 latitude of first point (degrees)
-#' @param lon1 longitude of first point (degrees)
-#' @param lat2 latitude of second point (degrees)
-#' @param lon2 longitude of second point (degrees)
-#' @return range in kilometers
-#' @noRd
-
-estimate_range <- function(lat1, lon1, lat2, lon2) {
-    R <- 6367 # radius of earth in kilometers (at latitude 45 degrees)
-    d2r <- 0.017453292519943295  # pi / 180
-
-    lat_avg <- d2r*(lat1 + lat2)/2
-    x <- d2r*(lon1 - lon2)*cos(d2r*lat_avg)
-    y <- d2r*(lat1 - lat2)
-    range_est <- R * sqrt(x^2 + y^2)
-
-    return(range_est)
 }
 
 #' calculate_range uses the Haversine formula to calculate the range 
@@ -509,7 +511,7 @@ calculate_bearing <- function(lat1, lon1, lat2, lon2) {
 
 get_maximum_wind_speed <- function(hur_id) {
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read hurricane track file
     track_file <- paste(hur_path, "/input/tracks.csv", sep="")
@@ -926,7 +928,7 @@ get_peak_values <- function(hur_id, site_name, dt_vec, wdir_vec, wspd_vec,
 #' get_regional_peak_wind calculates peak values for wind speed (meters/second), 
 #' enhanced Fujita scale, wind direction (degrees), cardinal wind direction (1-8),
 #' and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds (minutes) for a given 
-#  hurricane over a region. Results are returned in a raster brick.
+#  hurricane over a region. Results are returned in a raster with 10 layers.
 #' @param hur_id hurricane id
 #' @param lat_vec vector of hurricane latitudes (degrees)
 #' @param lon_vec vector of hurricane longitudes (degrees)
@@ -937,14 +939,14 @@ get_peak_values <- function(hur_id, site_name, dt_vec, wdir_vec, wspd_vec,
 #' @param time_step time step (minutes)
 #' @param water whether to calculate values over water
 #' @param msg whether to use message to display progress
-#' @return a raster brick containing 6 raster layers
+#' @return a raster containing 10 layers
 #' @noRd
 
 get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec, 
     spd_vec, width, time_step, water, msg=TRUE) {
   
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # get number of rows
     num <- length(lat_vec)
@@ -952,18 +954,18 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
     # read land-water file
     land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
-    land_water <- raster::raster(land_water_file)
+    land_water <- terra::rast(land_water_file)
 
     # get regional values
-    nrows <- dim(land_water)[1]
-    ncols <- dim(land_water)[2]
+    nrows <- terra::nrow(land_water)
+    ncols <- terra::ncol(land_water)
 
-    lat_min <- raster::extent(land_water)[3]
-    lat_max <- raster::extent(land_water)[4]
+    lat_min <- terra::ext(land_water)[3]
+    lat_max <- terra::ext(land_water)[4]
     cell_y <- (lat_max - lat_min)/nrows 
 
-    lon_min <- raster::extent(land_water)[1]
-    lon_max <- raster::extent(land_water)[2]
+    lon_min <- terra::ext(land_water)[1]
+    lon_max <- terra::ext(land_water)[2]
     cell_x <- (lon_max - lon_min)/ncols
 
     # create arrays for peak values
@@ -981,7 +983,7 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
     xx <- matrix(0, nrows, ncols)  # floating point wind speed (m/s)
 
     # create matrix from raster
-    land_water_matrix <- raster::as.matrix(land_water)
+    land_water_matrix <- terra::as.matrix(land_water, wide=TRUE)
   
     # read parameters file
     pars <- read_parameter_file(hur_id, width)
@@ -1125,39 +1127,39 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
     cc[1, ncols] <- 0
 
     # create raster layers
-    ss_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ss)
+    ss_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ss)
   
-    ff_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ff)
+    ff_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ff)
   
-    dd_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=dd)
+    dd_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=dd)
   
-    cc_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=cc)
+    cc_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=cc)
 
-    f0_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=f0)
+    f0_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=f0)
 
-    f1_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=f1)
+    f1_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=f1)
 
-    f2_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=f2)
+    f2_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=f2)
 
-    f3_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=f3)
+    f3_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=f3)
 
-    f4_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=f4)
+    f4_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=f4)
 
-    f5_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=f5)
+    f5_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=f5)
 
-    # create raster brick
-    hur_brick <- raster::brick(ss_raster, ff_raster, dd_raster, cc_raster, f0_raster, 
-        f1_raster, f2_raster, f3_raster, f4_raster, f5_raster)
+    # create raster
+    hur_r <- c(ss_layer, ff_layer, dd_layer, cc_layer, f0_layer, f1_layer, f2_layer, 
+        f3_layer, f4_layer, f5_layer)
 
     # report elapsed time
     if (msg == TRUE) {
@@ -1165,13 +1167,13 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
         message(paste("\r", elapsed_time), appendLF=FALSE)
     }
 
-    return(hur_brick)
+    return(hur_r)
 }
 
 #' get_regional_datetime calculates wind speed (meters/second), enhanced 
 #' Fujita scale, wind direction (degrees), and cardinal wind direction 
 #' (1-8) for a given hurricane over a region at a specified datetime. Results 
-#' are returned in a raster brick with 4 layers.
+#' are returned in a raster with 4 layers.
 #' @param hur_id hurricane id
 #' @param lat hurricane latitude (degrees)
 #' @param lon hurricane longitude (degrees)
@@ -1180,30 +1182,30 @@ get_regional_peak_wind <- function(hur_id, lat_vec, lon_vec, wmax_vec, bear_vec,
 #' @param spd hurricane forward speed (meters/second)
 #' @param width whether to use width parameters for the specified hurricane
 #' @param water whether to calculate values over water
-#' @return a raster brick containing 4 raster layers
+#' @return a raster containing 4 layers
 #' @noRd
 
 get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width, 
     water) {
   
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read land-water file
     land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
-    land_water <- raster::raster(land_water_file)
+    land_water <- terra::rast(land_water_file)
 
     # get regional values
-    nrows <- dim(land_water)[1]
-    ncols <- dim(land_water)[2]
+    nrows <- terra::nrow(land_water)
+    ncols <- terra::ncol(land_water)
 
-    lat_min <- raster::extent(land_water)[3]
-    lat_max <- raster::extent(land_water)[4]
+    lat_min <- terra::ext(land_water)[3]
+    lat_max <- terra::ext(land_water)[4]
     cell_y <- (lat_max - lat_min)/nrows 
 
-    lon_min <- raster::extent(land_water)[1]
-    lon_max <- raster::extent(land_water)[2]
+    lon_min <- terra::ext(land_water)[1]
+    lon_max <- terra::ext(land_water)[2]
     cell_x <- (lon_max - lon_min)/ncols
 
     # create arrays for values
@@ -1213,7 +1215,7 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
     cc <- matrix(0, nrows, ncols)  # cardinal wind direction (1-8)
 
     # create matrix from raster
-    land_water_matrix <- raster::as.matrix(land_water)
+    land_water_matrix <- terra::as.matrix(land_water, wide=TRUE)
   
     # read parameters file
     pars <- read_parameter_file(hur_id, width)
@@ -1324,26 +1326,26 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
     cc[1, ncols] <- 0
 
     # create raster layers
-    ss_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ss)
+    ss_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ss)
   
-    ff_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ff)
+    ff_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ff)
   
-    dd_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=dd)
+    dd_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=dd)
   
-    cc_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=cc)
+    cc_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=cc)
 
-    # create raster brick
-    hur_brick <- raster::brick(ss_raster, ff_raster, dd_raster, cc_raster)
+    # create raster
+    hur_r <- c(ss_layer, ff_layer, dd_layer, cc_layer)
 
     # report elapsed time
     elapsed_time <- format_time_difference_hms(start_time, Sys.time())
     message(paste("\r", elapsed_time), appendLF=FALSE)
 
-    return(hur_brick)
+    return(hur_r)
 }
 
 #' get_regional_summary_csv compiles regional results for all hurricanes.
@@ -1355,7 +1357,7 @@ get_regional_datetime <- function(hur_id, lat, lon, wmax, bear, spd, width,
 
 get_regional_summary_csv <- function(inter_path) {
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read ids file
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
@@ -1373,31 +1375,31 @@ get_regional_summary_csv <- function(inter_path) {
         hur_id <- ii$hur_id[i]
 
         # read regional hurricane file in GeoTiff format
-        hur_brick_file <- paste(inter_path, "/", hur_id, ".tif", sep="")
-        check_file_exists(hur_brick_file)
-        hur_brick <- raster::brick(hur_brick_file)
-
+        hur_file <- paste(inter_path, "/", hur_id, ".tif", sep="")
+        check_file_exists(hur_file)
+        hur_r <- terra::rast(hur_file)
+ 
         # get enhanced Fujita scale layer
-        ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
-
+        ff_layer <- hur_r[[2]]  # enhanced Fujita scale
+ 
         # update peak Fujita value
-        efmax <- raster::maxValue(ff_layer) - 2
-    kk[i, ] <- c(hur_id, efmax)
+        efmax <- terra::minmax(ff_layer)[2] - 2
+        kk[i, ] <- c(hur_id, efmax)
     }
 
     return(kk)
 }
 
 #' get_regional_summary_tif compiles regional results for all hurricanes.
-#' Results are returned as a raster brick with 7 layers representing the 
+#' Results are returned as a raster with 7 layers representing the 
 #' maximum Fujita value and the number of storms for each Fujita value.
 #' @param inter_path path to intermediate results
-#' @return raster brick of summary values
+#' @return raster of summary values
 #' @noRd
 
 get_regional_summary_tif <- function(inter_path) {
     # get path
-    hur_path <- get_path()
+    hur_path <- get_hur_path()
 
     # read ids file
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
@@ -1409,18 +1411,18 @@ get_regional_summary_tif <- function(inter_path) {
     # read land-water file
     land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
-    land_water <- raster::raster(land_water_file)
-    land_water_matrix <- raster::as.matrix(land_water)
+    land_water <- terra::rast(land_water_file)
+    land_water_matrix <- terra::as.matrix(land_water, wide=TRUE)
 
     # get regional values
-    nrows <- dim(land_water)[1]
-    ncols <- dim(land_water)[2]
+    nrows <- terra::nrow(land_water)
+    ncols <- terra::ncol(land_water)
 
-    lat_min <- raster::extent(land_water)[3]
-    lat_max <- raster::extent(land_water)[4]
+    lat_min <- terra::ext(land_water)[3]
+    lat_max <- terra::ext(land_water)[4]
 
-    lon_min <- raster::extent(land_water)[1]
-    lon_max <- raster::extent(land_water)[2]
+    lon_min <- terra::ext(land_water)[1]
+    lon_max <- terra::ext(land_water)[2]
 
     # create arrays for enhanced Fujita values
     efm <- matrix(0, nrows, ncols)
@@ -1437,13 +1439,13 @@ get_regional_summary_tif <- function(inter_path) {
         hur_id <- ii$hur_id[i]
 
         # read regional hurricane file in GeoTiff format
-        hur_brick_file <- paste(inter_path, "/", hur_id, ".tif", sep="")
-        check_file_exists(hur_brick_file)
-        hur_brick <- raster::brick(hur_brick_file)
+        hur_file <- paste(inter_path, "/", hur_id, ".tif", sep="")
+        check_file_exists(hur_file)
+        hur_r <- terra::rast(hur_file)
 
         # get enhanced Fujita scale layer
-        ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
-        ff_layer_matrix <- raster::as.matrix(ff_layer)
+        ff_layer <- hur_r[[2]]  # enhanced Fujita scale
+        ff_layer_matrix <- terra::as.matrix(ff_layer, wide=TRUE)
 
         # update enhanced Fujita scale
         for (j in 1:nrows) {
@@ -1492,31 +1494,31 @@ get_regional_summary_tif <- function(inter_path) {
     }
 
     # create raster layers
-    efm_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=efm)
+    efm_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=efm)
 
-    ef0_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ef0)
+    ef0_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ef0)
   
-    ef1_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ef1)
+    ef1_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ef1)
   
-    ef2_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ef2)
+    ef2_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ef2)
   
-    ef3_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ef3)
+    ef3_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ef3)
 
-    ef4_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ef4)
+    ef4_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ef4)
 
-    ef5_raster <- raster::raster(nrows=nrows, ncols=ncols, xmn=lon_min, xmx=lon_max, 
-        ymn=lat_min, ymx=lat_max, vals=ef5)
+    ef5_layer <- terra::rast(nrows=nrows, ncols=ncols, xmin=lon_min, xmax=lon_max, 
+        ymin=lat_min, ymax=lat_max, vals=ef5)
 
-    # create raster brick
-    sum_brick <- raster::brick(efm_raster, ef0_raster, ef1_raster, ef2_raster, ef3_raster, ef4_raster, ef5_raster)
+    # create raster
+    sum_r <- c(efm_layer, ef0_layer, ef1_layer, ef2_layer, ef3_layer, ef4_layer, ef5_layer)
 
-    return(sum_brick)
+    return(sum_r)
 }
 
 #' get_values_at_datetime returns a data frame of modeled values for the
@@ -1638,43 +1640,43 @@ hurrecon_get_path <- function() {
 #' (land_water.tif) is assumed to be aligned with lines of latitude and 
 #' longitude.  Boundary files are assumed to be named boundary.* on the vector 
 #' subdirectory. This function requires a reclasification file (reclassify.csv)
-#' with 3 columns (from, to, becomes) on the vector subdirectory. For more details,
-#' see documentation for the R raster and reclassify functions. The land-water
-#' file is created on the input subdirectory.
+#' on the vector subdirectory. For more details, see documentation for the 
+#' terra::classify function. The land-water file is created on the input 
+#' subdirectory with the following values: 1=water, 2=land.
 #' @param nrows number of rows
 #' @param ncols number of columns
-#' @param xmn minimum longitude (degrees)
-#' @param xmx maximum longitude (degrees)
-#' @param ymn minimum latitude (degrees)
-#' @param ymx maximum latitude (degrees)
+#' @param xmin minimum longitude (degrees)
+#' @param xmax maximum longitude (degrees)
+#' @param ymin minimum latitude (degrees)
+#' @param ymax maximum latitude (degrees)
 #' @param save whether to save results to a GeoTiff file
 #' @param hur_path path for current set of model runs
 #' @return land-water raster
 #' @export
 #' @rdname utility
 
-hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx, 
+hurrecon_create_land_water <- function(nrows, ncols, xmin, xmax, ymin, ymax, 
     save=TRUE, hur_path=NULL) {
     
     # get path
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
     message(paste("... Creating land-water ..."))
 
     # create new raster
-    raster1 <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx, vals=0)
+    raster1 <- terra::rast(nrows=nrows, ncols=ncols, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, vals=0)
 
     # read vector boundary file
     boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
-    boundaries <- rgdal::readOGR(boundaries_file)
+    boundaries <- terra::vect(boundaries_file)
 
     # rasterize vector file
-    raster2 <- raster::rasterize(boundaries, raster1)
+    raster2 <- terra::rasterize(boundaries, raster1)
 
     # read reclassify file
     reclassify_file <- paste(hur_path, "/vector/reclassify.csv", sep="")
@@ -1684,20 +1686,20 @@ hurrecon_create_land_water <- function(nrows, ncols, xmn, xmx, ymn, ymx,
     rcl <- as.matrix(rcl, ncol=3, byrow=TRUE)
 
     # reclassify raster
-    land_water <- raster::reclassify(raster2, rcl)
+    land_water <- terra::classify(raster2, rcl)
 
     # save to file
     if (save == TRUE) {
         land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
-        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-        raster::writeRaster(land_water, land_water_file, overwrite=TRUE)
+        terra::writeRaster(land_water, land_water_file, overwrite=TRUE, 
+            gdal=c("GDAL_PAM_ENABLED", "FALSE"))
     }
 
     # calculate cell dimensions in kilometers
-    lat_avg <- (ymx + ymn)/2
+    lat_avg <- (ymax + ymin)/2
 
-    cell_height <- 111*(ymx-ymn)/nrows
-    cell_width <- 111*(xmx-xmn)*cos(lat_avg*pi/180)/ncols
+    cell_height <- 111*(ymax-ymin)/nrows
+    cell_width <- 111*(xmax-xmin)*cos(lat_avg*pi/180)/ncols
 
     message(paste("Cell height =", round(cell_height) , "kilometers"))
     message(paste("Cell width  =", round(cell_width), "kilometers"))
@@ -1753,6 +1755,7 @@ hurrecon_reformat_hurdat2 <- function(path, hurdat2_file, save=TRUE) {
 
     # current line number in hurdat
     line_num <- 0
+    
     # current row number in tracks
     tracks_index <- 0
 
@@ -1874,7 +1877,7 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE,
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -1899,14 +1902,14 @@ hurrecon_extract_tracks <- function(margin=0, wind_min=33, status=TRUE,
     # read land-water file
     land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
-    land_water <- raster::raster(land_water_file)
+    land_water <- terra::rast(land_water_file)
 
     # get window coordinates
-    lon_min <- raster::extent(land_water)[1] - margin
-    lon_max <- raster::extent(land_water)[2] + margin
+    lon_min <- terra::ext(land_water)[1] - margin
+    lon_max <- terra::ext(land_water)[2] + margin
  
-    lat_min <- raster::extent(land_water)[3] - margin
-    lat_max <- raster::extent(land_water)[4] + margin
+    lat_min <- terra::ext(land_water)[3] - margin
+    lat_max <- terra::ext(land_water)[4] + margin
 
     # create data frames
     ids <- data.frame(hur_id=character(ii_rows), name=character(ii_rows), 
@@ -2048,7 +2051,7 @@ hurrecon_model_site <- function(hur_id, site_name, width=FALSE, time_step=1,
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2168,7 +2171,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2273,7 +2276,7 @@ hurrecon_model_site_all <- function(site_name, width=FALSE, time_step=1,
 #' @param msg whether to use message to display progress
 #' @param save whether to save results to a GeoTiff file
 #' @param hur_path path for current set of model runs
-#' @return a brick of 6 rasters
+#' @return a raster with 10 layers
 #' @export
 #' @rdname modeling
 
@@ -2284,7 +2287,7 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2317,40 +2320,40 @@ hurrecon_model_region <- function(hur_id, width=FALSE, time_step=NULL, water=FAL
     bear_vec <- mm[[2]]
 
     # get modeled values over region
-    hur_brick <- get_regional_peak_wind(hur_id, lat_vec, lon_vec, wmax_vec,
+    hur_r <- get_regional_peak_wind(hur_id, lat_vec, lon_vec, wmax_vec,
         bear_vec, spd_vec, width, time_step, water, msg)
 
     # output
     if (save == TRUE) {
         # save modeled values in a Geotiff file
-        hur_tif_file = paste(hur_path, "/region/", hur_id, ".tif", sep="")
-        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-        raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
+        hur_file = paste(hur_path, "/region/", hur_id, ".tif", sep="")
+        terra::writeRaster(hur_r, hur_file, overwrite=TRUE, 
+            gdal=c("GDAL_PAM_ENABLED", "FALSE"))
     
         if (msg == TRUE) {
-             message(paste("\nSaving to", hur_tif_file))
+             message(paste("\nSaving to", hur_file))
         }
     }
   
-    # return modeled values as raster brick
-    invisible(hur_brick)
+    # return modeled values as raster
+    invisible(hur_r)
 }
 
 #' @description
 #' hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
 #' Fujita scale, wind direction (degrees), and cardinal wind direction for a
 #' given hurricane over a region at a specified datetime. If width is TRUE, 
-#' the radius of maximum wind (rmw) (kilometers) and scaling parameter (s_par) 
-#  specified for the hurricane are used; otherwise values for ALL are used. 
-#' If water is FALSE, results are calculated for land areas only. If save is 
-#' TRUE, results are saved as a GeoTiff file on the region-dt subdirectory.
+#' the radius of maximum wind (rmw) and scaling parameter (s_par) specified 
+#' for the hurricane are used; otherwise values for ALL are used. If water 
+#' is FALSE, results are calculated for land areas only. If save is TRUE, 
+#' results are saved as a GeoTiff file on the region-dt subdirectory.
 #' @param hur_id hurricane id
 #' @param dt datetime in the format YYYY-MM-DDThh:mm
 #' @param width whether to use width parameters for the specified hurricane
 #' @param water whether to caculate results over water
 #' @param save whether to save results to a GeoTiff file
 #' @param hur_path path for current set of model runs
-#' @return a brick of 4 rasters
+#' @return a raster of 4 layers
 #' @export
 #' @rdname modeling
 
@@ -2361,7 +2364,7 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2374,29 +2377,28 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
     pp <- get_values_at_datetime(hur_id, tt, dt)
 
     # get modeled values over region
-    hur_brick <- get_regional_datetime(hur_id, pp$lat[1], pp$lon[1], pp$wmax[1], 
+    hur_r <- get_regional_datetime(hur_id, pp$lat[1], pp$lon[1], pp$wmax[1], 
         pp$bear[1], pp$spd[1], width, water)
 
     # output
     if (save == TRUE) {
         # save modeled values in a Geotiff file
         dt2 <- gsub(":", "", dt)
-        hur_tif_file <- paste(hur_path, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
-        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-        raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
+        hur_file <- paste(hur_path, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+        terra::writeRaster(hur_r, hur_file, overwrite=TRUE, 
+            gdal=c("GDAL_PAM_ENABLED", "FALSE"))
     
-        message(paste("\nSaving to", hur_tif_file))
+        message(paste("\nSaving to", hur_file))
     }
   
-    # return modeled values as raster brick
-    invisible(hur_brick)
+    # return modeled values as a raster
+    invisible(hur_r)
 }
 
 #' @description
-#' hurrecon_model_region_all calculates peak wind speed (meters/second), 
-#' peak enhanced Fujita scale, peak wind direction (degrees), peak cardinal 
-#' wind direction, duration of gale winds (minutes), and duration of hurricane
-#' winds (minutes) over a region for all hurricanes. If width is TRUE, the 
+#' hurrecon_model_region_all runs hurrecon_model_region for each hurricane
+#' and calculates the maximum Fujita value and the number of hurricanes for 
+#' each Fujita value (EF0-EF5) across a region. If width is TRUE, the 
 #' radius of maximum wind (rmw) and scaling parameter (s_par) specified for 
 #' each hurricane is used; otherwise values for ALL are used. If time_step is 
 #' NULL, the time step is calculated. If water is FALSE, results are calculated 
@@ -2409,7 +2411,7 @@ hurrecon_model_region_dt <- function(hur_id, dt, width=FALSE, water=FALSE,
 #' @param water whether to calculate results over water
 #' @param save whether to save results to file
 #' @param hur_path path for current set of model runs
-#' @return a list containing a data frame and a raster brick of summary values
+#' @return a list containing a data frame and a raster of summary values
 #' @export
 #' @rdname modeling
 
@@ -2420,7 +2422,7 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # get path for intermediate results
@@ -2466,20 +2468,20 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
         message(paste("\r", x, "%"), appendLF=FALSE)
 
         # get modeled values over region
-        hur_brick <- hurrecon_model_region(hur_id, width, time_step, water, 
+        hur_r <- hurrecon_model_region(hur_id, width, time_step, water, 
             msg=FALSE, save=FALSE)
 
         # save modeled values in a Geotiff file
-        hur_tif_file <- paste(inter_path, "/", hur_id, ".tif", sep="")
-        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-        raster::writeRaster(hur_brick, hur_tif_file, overwrite=TRUE)
+        hur_file <- paste(inter_path, "/", hur_id, ".tif", sep="")
+        terra::writeRaster(hur_r, hur_file, overwrite=TRUE, 
+            gdal=c("GDAL_PAM_ENABLED", "FALSE"))
     }
 
     # get summary.csv file
     kk <- get_regional_summary_csv(inter_path)
 
     # get summary.tif file
-    sum_brick <- get_regional_summary_tif(inter_path)
+    sum_r <- get_regional_summary_tif(inter_path)
 
     # display total elapsed time
     elapsed_time <- format_time_difference_hms(start_time, Sys.time())
@@ -2490,16 +2492,16 @@ hurrecon_model_region_all <- function(width=FALSE, time_step=NULL, water=FALSE,
         peak_file <- paste(hur_path, "/region-all/summary.csv", sep="")
         utils::write.csv(kk, peak_file, row.names=FALSE)
 
-        sum_brick_file <- paste(hur_path, "/region-all/summary.tif", sep="")
-        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-        raster::writeRaster(sum_brick, sum_brick_file, overwrite=TRUE)
+        sum_file <- paste(hur_path, "/region-all/summary.tif", sep="")
+        terra::writeRaster(sum_r, sum_file, overwrite=TRUE, 
+            gdal=c("GDAL_PAM_ENABLED", "FALSE"))
 
         reg_all_dir <- paste(hur_path, "/region-all/", sep="")
         message(paste("\nSaving to", reg_all_dir))
     }
 
     # return a list of summary results
-    invisible(list(kk, sum_brick))
+    invisible(list(kk, sum_r))
 }
 
 
@@ -2521,7 +2523,7 @@ hurrecon_summarize_land_water <- function(console=TRUE, hur_path=NULL) {
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2530,31 +2532,31 @@ hurrecon_summarize_land_water <- function(console=TRUE, hur_path=NULL) {
     # read land-water file
     land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
-    land_water <- raster::raster(land_water_file)
-    land_water_matrix <- raster::as.matrix(land_water)
+    land_water <- terra::rast(land_water_file)
+    land_water_matrix <- terra::as.matrix(land_water, wide=TRUE)
 
     # get regional values
-    nrows <- dim(land_water)[1]
-    ncols <- dim(land_water)[2]
+    nrows <- terra::nrow(land_water)
+    ncols <- terra::ncol(land_water)
 
-    ymn <- raster::extent(land_water)[3]
-    ymx <- raster::extent(land_water)[4]
-    xmn <- raster::extent(land_water)[1]
-    xmx <- raster::extent(land_water)[2]
+    ymin <- terra::ext(land_water)[3]
+    ymax <- terra::ext(land_water)[4]
+    xmin <- terra::ext(land_water)[1]
+    xmax <- terra::ext(land_water)[2]
 
     # calculate cell dimensions in kilometers
-    lat_avg <- (ymx + ymn)/2
+    lat_avg <- (ymax + ymin)/2
 
-    cell_height <- 111*(ymx-ymn)/nrows
-    cell_width <- 111*(xmx-xmn)*cos(lat_avg*pi/180)/ncols
+    cell_height <- 111*(ymax-ymin)/nrows
+    cell_width <- 111*(xmax-xmin)*cos(lat_avg*pi/180)/ncols
 
     # get default time step
 
     time_step <- get_time_step()
 
     st <- paste("Rows: ", nrows, "  Columns: ", ncols, "\n", sep="")
-    st <- paste(st, "Latitude: ", round(ymn, 1), " to ", round(ymx, 1), " degrees\n", sep="")
-    st <- paste(st, "Longitude: ", round(xmn, 1), " to ", round(xmx, 1), " degrees\n", sep="")
+    st <- paste(st, "Latitude: ", round(ymin, 1), " to ", round(ymax, 1), " degrees\n", sep="")
+    st <- paste(st, "Longitude: ", round(xmin, 1), " to ", round(xmax, 1), " degrees\n", sep="")
     st <- paste(st, "Cell height: ", round(cell_height), " kilometers\n", sep="")
     st <- paste(st, "Cell width: ", round(cell_width), " kilometers\n", sep="")
     st <- paste(st, "Time Step: ", time_step, " minutes\n", sep="")
@@ -2567,8 +2569,8 @@ hurrecon_summarize_land_water <- function(console=TRUE, hur_path=NULL) {
 }
 
 #' @description
-#' hurrecon_summarize_tracks displays information about the current ids file 
-#' (ids.csv).
+#' hurrecon_summarize_tracks displays information about the hurricane tracks
+#' that are currently selected.
 #' @param console whether to display results in console
 #' @param hur_path path for current set of model runs
 #' @return a string containing summary information
@@ -2580,7 +2582,7 @@ hurrecon_summarize_tracks <- function(console=TRUE, hur_path=NULL) {
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2599,8 +2601,8 @@ hurrecon_summarize_tracks <- function(console=TRUE, hur_path=NULL) {
 
     st <- paste("Number of storms = ", ii_rows, "\n", sep="")
     st <- paste(st, "Number of positions = ", positions_total, "\n", sep="")
-    st <- paste(st, "Minimum peak wind = ", wind_peak_min, "m/s\n", sep="")
-    st <- paste(st, "Maximum peak wind = ", wind_peak_max, "m/s\n", sep="")
+    st <- paste(st, "Minimum peak wind = ", round(wind_peak_min, 0), " m/s\n", sep="")
+    st <- paste(st, "Maximum peak wind = ", round(wind_peak_max, 0), " m/s\n", sep="")
 
     if (console == TRUE) {
         cat(st)
@@ -2625,7 +2627,7 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE, hur_path=NU
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2676,6 +2678,89 @@ hurrecon_summarize_site <- function(hur_id, site_name, console=TRUE, hur_path=NU
     invisible(st)
 }
 
+#' @description
+#' hurrecon_summarize_region displays summary information for a specified 
+#' raster file and layer, including number of layers, number of rows and columns,
+#' spatial extent, cell height and width, and minimum and maximum value.
+#' @param filename name of input raster file
+#' @param layer number of raster layer
+#' @param subdir subdirectory where raster file is located (region, region-dt, 
+#' or region-all)
+#' @param console whether to display results in console
+#' @param hur_path path for current set of model runs
+#' @return a string containing summary information
+#' @export
+#' @rdname summarizing
+
+hurrecon_summarize_region <- function(filename, layer=1, subdir="region", console=TRUE, 
+    hur_path=NULL) {
+    
+    # check subdirectory
+    if (!(subdir %in% c("region", "region-dt", "region-all"))) {
+        stop("subdir must be region, region-dt, region-all", call. = FALSE)
+    }
+
+    # get path
+    if (!is.null(hur_path)) {
+        hurrecon_set_path(hur_path)
+    } else {
+        hur_path <- get_hur_path()
+    }
+
+    # announcement
+    message("... Summarizing region ...")
+    
+    # read file in GeoTiff format
+    file_path <- paste(hur_path, "/", subdir, "/", filename, ".tif", sep="")
+    check_file_exists(file_path)
+    rr <- terra::rast(file_path)
+    rr_nlyr <- terra::nlyr(rr)
+
+    if (layer < 0 || layer > rr_nlyr) {
+        stop("layer not found", call. = FALSE)
+    }
+
+    rr_layer <- rr[[layer]]
+
+    # get number of rows & columns
+    nrows <- terra::nrow(rr_layer)
+    ncols <- terra::ncol(rr_layer)
+
+    # get extent
+    xmin <- terra::ext(rr_layer)[1]
+    xmax <- terra::ext(rr_layer)[2]
+    ymin <- terra::ext(rr_layer)[3]
+    ymax <- terra::ext(rr_layer)[4]
+  
+    # calculate cell dimensions
+    cell_x <- (xmax-xmin)/ncols
+    cell_y <- (ymax-ymin)/nrows
+
+    lat_mid <- ymin + (ymax-ymin)/2
+    cell_x <- 111*cell_x*cos(lat_mid*pi/180)
+    cell_y <- 111*cell_y
+
+    # get min & max values
+    val_min <- terra::minmax(rr_layer)[1]
+    val_max <- terra::minmax(rr_layer)[2]
+
+    # create display string
+    st <- paste("Layer: ", layer, " of ", rr_nlyr, " layers", "\n", sep="")
+    st <- paste(st, "Rows: ", nrows, "  Columns: ", ncols, "\n", sep="")
+    st <- paste(st, "Latitude: ", round(ymin, 6), " to ", round(ymax, 6), " degrees\n", sep="")
+    st <- paste(st, "Longitude: ", round(xmin, 6), " to ", round(xmax, 6), " degrees\n", sep="")
+    st <- paste(st, "Cell height: ", round(cell_y), " kilometers\n", sep="")
+    st <- paste(st, "Cell width: ", round(cell_x), " kilometers\n", sep="")
+    st <- paste(st, "Values: ", round(val_min, 6), " to ", round(val_max, 6), "\n", sep="")
+    
+    # display results in console
+    if (console == TRUE) {
+        cat(st)
+    }
+
+    invisible(st)
+}
+
 
 ### PLOTTING FUNCTIONS ####################################
 
@@ -2711,7 +2796,7 @@ hurrecon_plot_site <- function(hur_id, site_name, start_datetime='',
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -2926,7 +3011,7 @@ hurrecon_plot_site_all <- function(site_name, start_year='', end_year='',
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -3098,7 +3183,7 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
@@ -3107,12 +3192,12 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
     # read land-water file
     land_water_file <- paste(hur_path, "/input/land_water.tif", sep="")
     check_file_exists(land_water_file)
-    land_water <- raster::raster(land_water_file)
+    land_water <- terra::rast(land_water_file)
 
     # get vector boundary file
     boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
-    boundaries <- rgdal::readOGR(boundaries_file)
+    boundaries <- terra::vect(boundaries_file)
 
     # get hurricane tracks
     ids_file <- paste(hur_path, "/input/ids.csv", sep="")
@@ -3130,12 +3215,15 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
     tt_all <- utils::read.csv(track_all_file, header=TRUE)
     names(tt_all)[1] <- "hur_id"
 
+    # get labels
+    labs <- c("water", "land")
+
     # get palette
     if (length(colormap) == 1) {
-        cmap <- rev(grDevices::terrain.colors(255))
+        cmap <- c("white", "green")
 
     } else {
-        cmap <- colormap
+        cmap <- c(colormap[1], colormap[2])
     }
 
     # set titles
@@ -3154,13 +3242,9 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 
     graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
   
-    vals <- c(0, 1, 2)
-    labs <- c("", "water", "land")
-
-    raster::plot(land_water, xlab=xlab, ylab=ylab, main=main_title,
-        axis.args=list(at=vals, labels=labs), 
-        legend.args=list(text='  cover', line=1), col=cmap)
-    raster::plot(boundaries, add=TRUE)
+    terra::plot(land_water, xlab=xlab, ylab=ylab, main=main_title, type="classes",
+        plg=list(title="  cover"), levels=labs, all_levels=TRUE, col=cmap)
+    terra::plot(boundaries, add=TRUE)
 
     if (select == "all") {
         for (i in 1:nrow(ii)) {
@@ -3187,11 +3271,11 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 #' enhanced Fujita scale, peak wind direction, peak cardinal wind direction,
 #' and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds for a given hurricane.
 #' Variables to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
-#' ef0_duration, ef1_duration, ef2_duration, ef3_duration, ef4_duration,
-#' and ef5_duration.
+#' ef0, ef1, ef2, ef3, ef4, and ef5.
 #' @param hur_id hurricane id
 #' @param var variable to plot
-#' @param region_all whether to plot results from hurrecon_model_region_all
+#' @param subdir whether to plot results from hurrecon_model_region (region)
+#' or hurrecon_model_region_all (region-all)
 #' @param positions whether to plot original positions
 #' @param title optional title
 #' @param colormap color palette
@@ -3200,47 +3284,45 @@ hurrecon_plot_tracks <- function(select="all", wind_min=33, title="",
 #' @export
 #' @rdname plotting
 
-hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
+hurrecon_plot_region <- function(hur_id, var="fujita_scale", subdir="region",
     positions=FALSE, title="", colormap="default", hur_path=NULL) {
   
     # get path
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
     message(paste("... Plotting region ..."))
- 
-    # get subdirectory
-    if (region_all == TRUE) {
-        subdir <- "region-all"
-    } else {
-        subdir <- "region"
+
+    # check subdirectory
+    if (!(subdir %in% c("region", "region-all"))) {
+        stop("subdir must be region, or region-all", call. = FALSE)
     }
 
-    # read raster brick file in GeoTiff format
-    hur_tif_file <- paste(hur_path, "/", subdir, "/", hur_id, ".tif", sep="")
-    check_file_exists(hur_tif_file)
-    hur_brick <- raster::brick(hur_tif_file)
+    # read raster file in GeoTiff format
+    hur_file <- paste(hur_path, "/", subdir, "/", hur_id, ".tif", sep="")
+    check_file_exists(hur_file)
+    hur_r <- terra::rast(hur_file)
 
     # get individual layers
-    ss_layer <- raster::subset(hur_brick, 1)  # wind speed (m/s)
-    ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
-    dd_layer <- raster::subset(hur_brick, 3)  # wind direction (degrees)
-    cc_layer <- raster::subset(hur_brick, 4)  # cardinal wind direction (1-8)
-    f0_layer <- raster::subset(hur_brick, 5)  # duration of EF0 winds (minutes)
-    f1_layer <- raster::subset(hur_brick, 6)  # duration of EF1 winds (minutes)
-    f2_layer <- raster::subset(hur_brick, 7)  # duration of EF2 winds (minutes)
-    f3_layer <- raster::subset(hur_brick, 8)  # duration of EF3 winds (minutes)
-    f4_layer <- raster::subset(hur_brick, 9)  # duration of EF4 winds (minutes)
-    f5_layer <- raster::subset(hur_brick, 10) # duration of EF5 winds (minutes)
+    ss_layer <- hur_r[[1]]  # wind speed (m/s)
+    ff_layer <- hur_r[[2]]  # enhanced Fujita scale
+    dd_layer <- hur_r[[3]]  # wind direction (degrees)
+    cc_layer <- hur_r[[4]]  # cardinal wind direction (1-8)
+    f0_layer <- hur_r[[5]]  # duration of EF0 winds (minutes)
+    f1_layer <- hur_r[[6]]  # duration of EF1 winds (minutes)
+    f2_layer <- hur_r[[7]]  # duration of EF2 winds (minutes)
+    f3_layer <- hur_r[[8]]  # duration of EF3 winds (minutes)
+    f4_layer <- hur_r[[9]]  # duration of EF4 winds (minutes)
+    f5_layer <- hur_r[[10]] # duration of EF5 winds (minutes)
 
     # get vector boundary file
     boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
-    boundaries <- rgdal::readOGR(boundaries_file)
+    boundaries <- terra::vect(boundaries_file)
 
     # get hurricane tracks
     track_all_file <- paste(hur_path, "/input/tracks_all.csv", sep="")
@@ -3250,7 +3332,7 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     index <- which(zz$hur_id == hur_id)
     tt_all <- zz[index, ]
 
-    # get values, labels & colors for enhanced Fujita scale plot
+    # get labels & colors for enhanced Fujita scale & wind compass plots
     ef_col <- get_fujita_colors()
 
     ef0_col <- ef_col[[1]]
@@ -3261,22 +3343,39 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     ef5_col <- ef_col[[6]]
     efx_col <- ef_col[[7]]
 
-    ff_all_vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
     ff_all_labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
     ff_all_cols <- c("white", efx_col, ef0_col, ef1_col, ef2_col, ef3_col, ef4_col, ef5_col)
 
-    ff_min <- raster::minValue(ff_layer)
-    ff_max <- raster::maxValue(ff_layer)
+    ff_min <- terra::minmax(ff_layer)[1]
+    ff_max <- terra::minmax(ff_layer)[2]
 
-    ff_vals <- c(ff_all_vals[ff_min+1])
     ff_labs <- c(ff_all_labs[ff_min+1])
     ff_cols <- c(ff_all_cols[ff_min+1])
 
     if (ff_max > ff_min) {
-        for (i in (ff_min+2):(ff_max+1)) {
-            ff_vals <- append(ff_vals, ff_all_vals[i])
-            ff_labs <- append(ff_labs, ff_all_labs[i])
-            ff_cols <- append(ff_cols, ff_all_cols[i])
+        for (i in (ff_min+1):(ff_max)) {
+            if (check_raster_value(hur_r, 2, i)) {
+                ff_labs <- append(ff_labs, ff_all_labs[i+1])
+                ff_cols <- append(ff_cols, ff_all_cols[i+1])
+            }
+        }
+    }
+
+    cc_all_labs <- c("","N","NE","E","SE","S","SW","W","NW")
+    cc_all_cols <- grDevices::rainbow(9)
+
+    cc_min <- terra::minmax(cc_layer)[1]
+    cc_max <- terra::minmax(cc_layer)[2]
+
+    cc_labs <- c(cc_all_labs[cc_min+1])
+    cc_cols <- c(cc_all_cols[cc_min+1])
+
+    if (cc_max > cc_min) {
+        for (i in (cc_min+1):(cc_max)) {
+            if (check_raster_value(hur_r, 4, i)) {
+                cc_labs <- append(cc_labs, cc_all_labs[i+1])
+                cc_cols <- append(cc_cols, cc_all_cols[i+1])
+            }
         }
     }
 
@@ -3287,17 +3386,17 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
                 cmap <- ff_cols
 
             } else if (var == "wind_compass") {
-                cmap <- grDevices::rainbow(9)
+                cmap <- cc_cols
                 cmap[1] <- "white"
 
             } else {
                 cmap <- rev(grDevices::terrain.colors(255))
             }
         }  
+
     # user-specified palette
     } else {
         cmap <- colormap
-        cmap[1] <- "white"
     }
 
     # set titles
@@ -3313,13 +3412,13 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
     graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
   
     if (var == "wind_speed") {
-        if (raster::maxValue(ss_layer) > 0) {
+        if (terra::minmax(ss_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Peak Wind Speed")
             }
-            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  m/sec', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  m/s"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3328,14 +3427,13 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             message("No wind speed")   
         }
     } else if (var == "fujita_scale") {
-        if (raster::maxValue(ff_layer) > 0) {
+        if (terra::minmax(ff_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Peak Fujita Scale")
             }
-            arg <- list(at=ff_vals, labels=ff_labs)
-            raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
-                legend.args=list(text='  EF Scale', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_title, type="classes",
+                plg=list(title="  EF Scale"), levels=ff_labs, all_levels=TRUE, col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3346,13 +3444,13 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
 
 
     } else if (var == "wind_direction") {
-        if (raster::maxValue(dd_layer) > 0) {
+        if (terra::minmax(dd_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Peak Wind Direction")
             }
-            raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  degrees', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  degrees"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3362,14 +3460,14 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
         }
     
     } else if (var == "wind_compass") {
-        if (raster::maxValue(cc_layer) > 0) {
+        if (terra::minmax(cc_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Peak Wind Direction")
             }
-            arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
-            raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
-                legend.args=list(text='  direction', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            wc_labs <- c("","N","NE","E","SE","S","SW","W","NW")
+            terra::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_title, type="classes",
+                plg=list(title="  direction"), levels=cc_labs, all_levels=TRUE, col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3378,15 +3476,15 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             message("No wind compass")
         }
 
-    } else if (var == "ef0_duration") {
-        if (raster::maxValue(f0_layer) > 0) {
+    } else if (var == "ef0") {
+        if (terra::minmax(f0_layer)[2] > 0) {
             f0_layer <- f0_layer/60
             if (main_title == "") {
                 main_title <- paste(hur_id, "EF0 Winds")
             }
-            raster::plot(f0_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  hours', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(f0_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  hours"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3395,15 +3493,15 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             message("No EF0 winds")
         }
 
-    } else if (var == "ef1_duration") {
-        if (raster::maxValue(f1_layer) > 0) {
+    } else if (var == "ef1") {
+        if (terra::minmax(f1_layer)[2] > 0) {
             f1_layer <- f1_layer/60
             if (main_title == "") {
                 main_title <- paste(hur_id, "EF1 Winds")
             }
-            raster::plot(f1_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  hours', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(f1_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  hours"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3412,15 +3510,15 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             message("No EF1 winds")
         }
 
-    } else if (var == "ef2_duration") {
-        if (raster::maxValue(f2_layer) > 0) {
+    } else if (var == "ef2") {
+        if (terra::minmax(f2_layer)[2] > 0) {
             f2_layer <- f2_layer/60
             if (main_title == "") {
                 main_title <- paste(hur_id, "EF2 Winds")
             }
-            raster::plot(f2_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  hours', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(f2_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  hours"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3429,15 +3527,15 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             message("No EF2 winds")
         }
 
-    } else if (var == "ef3_duration") {
-        if (raster::maxValue(f3_layer) > 0) {
+    } else if (var == "ef3") {
+        if (terra::minmax(f3_layer)[2] > 0) {
             f3_layer <- f3_layer/60
             if (main_title == "") {
                 main_title <- paste(hur_id, "EF3 Winds")
             }
-            raster::plot(f3_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  hours', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(f3_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  hours"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3446,15 +3544,15 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             message("No EF3 winds")
         }
 
-    } else if (var == "ef4_duration") {
-        if (raster::maxValue(f4_layer) > 0) {
+    } else if (var == "ef4") {
+        if (terra::minmax(f4_layer)[2] > 0) {
             f4_layer <- f4_layer/60
             if (main_title == "") {
                 main_title <- paste(hur_id, "EF4 Winds")
             }
-            raster::plot(f4_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  hours', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(f4_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  hours"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3463,15 +3561,15 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
             message("No EF4 winds")
         }
 
-    } else if (var == "ef5_duration") {
-        if (raster::maxValue(f5_layer) > 0) {
+    } else if (var == "ef5") {
+        if (terra::minmax(f5_layer)[2] > 0) {
             f5_layer <- f5_layer/60
             if (main_title == "") {
                 main_title <- paste(hur_id, "EF5 Winds")
             }
-            raster::plot(f5_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  hours', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(f5_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  hours"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3481,8 +3579,8 @@ hurrecon_plot_region <- function(hur_id, var="fujita_scale", region_all=FALSE,
         }
 
     } else {
-        stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, ef0_duration, 
-            ef1_duration, ef2_duration, ef3_duration, ef4_duration, or ef5_duration", call. = FALSE)
+        stop("var must be wind_speed, fujita_scale, wind_direction, wind_compass, ef0, 
+            ef1, ef2, ef3, ef4, or ef5", call. = FALSE)
     }
 }
 
@@ -3509,28 +3607,28 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
     message(paste("... Plotting region dt ..."))
  
-    # read raster brick file in GeoTiff format
+    # read raster file in GeoTiff format
     dt2 <- gsub(":", "", dt)
-    hur_tif_file <- paste(hur_path, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
-    check_file_exists(hur_tif_file)
-    hur_brick <- raster::brick(hur_tif_file)
+    hur_file <- paste(hur_path, "/region-dt/", hur_id, " ", dt2, ".tif", sep="")
+    check_file_exists(hur_file)
+    hur_r <- terra::rast(hur_file)
 
     # get individual layers
-    ss_layer <- raster::subset(hur_brick, 1)  # wind speed (m/s)
-    ff_layer <- raster::subset(hur_brick, 2)  # enhanced Fujita scale
-    dd_layer <- raster::subset(hur_brick, 3)  # wind direction (degrees)
-    cc_layer <- raster::subset(hur_brick, 4)  # cardinal wind direction (1-8)
+    ss_layer <- hur_r[[1]]  # wind speed (m/s)
+    ff_layer <- hur_r[[2]]  # enhanced Fujita scale
+    dd_layer <- hur_r[[3]]  # wind direction (degrees)
+    cc_layer <- hur_r[[4]]  # cardinal wind direction (1-8)
 
     # get vector boundary file
     boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
-    boundaries <- rgdal::readOGR(boundaries_file)
+    boundaries <- terra::vect(boundaries_file)
 
     # get current location
     tt <- read_hurricane_track_file(hur_id)
@@ -3544,7 +3642,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     index <- which(zz$hur_id == hur_id)
     tt_all <- zz[index, ]
 
-    # get values, labels & colors for enhanced Fujita scale plot
+    # get labels & colors for enhanced Fujita & wind compass plots
     ef_col <- get_fujita_colors()
 
     ef0_col <- ef_col[[1]]
@@ -3555,22 +3653,39 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     ef5_col <- ef_col[[6]]
     efx_col <- ef_col[[7]]
 
-    ff_all_vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
     ff_all_labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
     ff_all_cols <- c("white", efx_col, ef0_col, ef1_col, ef2_col, ef3_col, ef4_col, ef5_col)
 
-    ff_min <- raster::minValue(ff_layer)
-    ff_max <- raster::maxValue(ff_layer)
+    ff_min <- terra::minmax(ff_layer)[1]
+    ff_max <- terra::minmax(ff_layer)[2]
 
-    ff_vals <- c(ff_all_vals[ff_min+1])
     ff_labs <- c(ff_all_labs[ff_min+1])
     ff_cols <- c(ff_all_cols[ff_min+1])
 
     if (ff_max > ff_min) {
-        for (i in (ff_min+2):(ff_max+1)) {
-            ff_vals <- append(ff_vals, ff_all_vals[i])
-            ff_labs <- append(ff_labs, ff_all_labs[i])
-            ff_cols <- append(ff_cols, ff_all_cols[i])
+        for (i in (ff_min+1):(ff_max)) {
+            if (check_raster_value(hur_r, 2, i)) {
+                ff_labs <- append(ff_labs, ff_all_labs[i+1])
+                ff_cols <- append(ff_cols, ff_all_cols[i+1])
+            }
+        }
+    }
+
+    cc_all_labs <- c("","N","NE","E","SE","S","SW","W","NW")
+    cc_all_cols <- grDevices::rainbow(9)
+
+    cc_min <- terra::minmax(cc_layer)[1]
+    cc_max <- terra::minmax(cc_layer)[2]
+
+    cc_labs <- c(cc_all_labs[cc_min+1])
+    cc_cols <- c(cc_all_cols[cc_min+1])
+
+    if (cc_max > cc_min) {
+        for (i in (cc_min+1):(cc_max)) {
+            if (check_raster_value(hur_r, 4, i)) {
+                cc_labs <- append(cc_labs, cc_all_labs[i+1])
+                cc_cols <- append(cc_cols, cc_all_cols[i+1])
+            }
         }
     }
 
@@ -3581,7 +3696,7 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
                 cmap <- ff_cols
 
             } else if (var == "wind_compass") {
-                cmap <- grDevices::rainbow(9)
+                cmap <- cc_cols
                 cmap[1] <- "white"
 
             } else {
@@ -3592,7 +3707,6 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     # user-specified palette
     } else {
         cmap <- colormap
-        cmap[1] <- "white"
     }
 
     # set titles
@@ -3608,14 +3722,13 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
     graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
   
     if (var == "fujita_scale") {
-        if (raster::maxValue(ff_layer) > 0) {
+        if (terra::minmax(ff_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Fujita Scale", dt)
             }
-            arg <- list(at=ff_vals, labels=ff_labs)
-            raster::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
-                legend.args=list(text='  EF Scale', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ff_layer, xlab=xlab, ylab=ylab, main=main_title, type="classes",
+                plg=list(title="  EF Scale"), levels=ff_labs, all_levels=TRUE, col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3626,13 +3739,13 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
         }
 
     } else if (var == "wind_speed") {
-        if (raster::maxValue(ss_layer) > 0) {
+        if (terra::minmax(ss_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Wind Speed", dt)
             }
-            raster::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  m/sec', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ss_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  m/sec"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3643,13 +3756,13 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
         }
 
     } else if (var == "wind_direction") {
-        if (raster::maxValue(dd_layer) > 0) {
+        if (terra::minmax(dd_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Wind Direction", dt)
             }
-            raster::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  degrees', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(dd_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title="  degrees"), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3660,14 +3773,13 @@ hurrecon_plot_region_dt <- function(hur_id, dt, var="fujita_scale", positions=FA
         }
 
     } else if (var == "wind_compass") {
-        if (raster::maxValue(cc_layer) > 0) {
+        if (terra::minmax(cc_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- paste(hur_id, "Wind Direction", dt)
             }
-            arg <- list(at=c(0,1,2,3,4,5,6,7,8), labels=c("","N","NE","E","SE","S","SW","W","NW"))
-            raster::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
-                legend.args=list(text='  direction', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(cc_layer, xlab=xlab, ylab=ylab, main=main_title, type="classes",
+                plg=list(title="  direction"), levels=cc_labs, all_levels=TRUE, col=cmap)
+            terra::plot(boundaries, add=TRUE)
             graphics::lines(tt_all$longitude, tt_all$latitude, col="brown")
             if (positions == TRUE) {
                 graphics::points(tt_all$longitude, tt_all$latitude, pch=16, cex=0.5, col="brown")
@@ -3702,32 +3814,32 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     if (!is.null(hur_path)) {
         hurrecon_set_path(hur_path)
     } else {
-        hur_path <- get_path()
+        hur_path <- get_hur_path()
     }
 
     # announcement
     message(paste("... Plotting region all ..."))
  
     # read summary file in GeoTiff format
-    sum_tif_file <- paste(hur_path, "/region-all/", "summary.tif", sep="")
-    check_file_exists(sum_tif_file)
-    sum_brick <- raster::brick(sum_tif_file)
+    sum_file <- paste(hur_path, "/region-all/", "summary.tif", sep="")
+    check_file_exists(sum_file)
+    sum_r <- terra::rast(sum_file)
 
     # get individual layers
-    efm_layer <- raster::subset(sum_brick, 1)
-    ef0_layer <- raster::subset(sum_brick, 2)
-    ef1_layer <- raster::subset(sum_brick, 3)
-    ef2_layer <- raster::subset(sum_brick, 4)
-    ef3_layer <- raster::subset(sum_brick, 5)
-    ef4_layer <- raster::subset(sum_brick, 6)
-    ef5_layer <- raster::subset(sum_brick, 7)
+    efm_layer <- sum_r[[1]]  # maximum Fujita scale
+    ef0_layer <- sum_r[[2]]  # number of EF0 storms
+    ef1_layer <- sum_r[[3]]  # number of EF1 storms
+    ef2_layer <- sum_r[[4]]  # number of EF2 storms
+    ef3_layer <- sum_r[[5]]  # number of EF3 storms
+    ef4_layer <- sum_r[[6]]  # number of EF4 storms
+    ef5_layer <- sum_r[[7]]  # number of EF5 storms
 
     # get vector boundary file
     boundaries_file <- paste(hur_path, "/vector/boundaries.shp", sep="")
     check_file_exists(boundaries_file)
-    boundaries <- rgdal::readOGR(boundaries_file)
+    boundaries <- terra::vect(boundaries_file)
 
-    # get values, labels & colors for enhanced Fujita scale plot
+    # get labels & colors for enhanced Fujita scale plot
     ef_col <- get_fujita_colors()
 
     ef0_col <- ef_col[[1]]
@@ -3738,22 +3850,21 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     ef5_col <- ef_col[[6]]
     efx_col <- ef_col[[7]]
 
-    efm_all_vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
     efm_all_labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
     efm_all_cols <- c("white", efx_col, ef0_col, ef1_col, ef2_col, ef3_col, ef4_col, ef5_col)
 
-    efm_min <- raster::minValue(efm_layer)
-    efm_max <- raster::maxValue(efm_layer)
+    efm_min <- terra::minmax(efm_layer)[1]
+    efm_max <- terra::minmax(efm_layer)[2]
 
-    efm_vals <- c(efm_all_vals[efm_min+1])
     efm_labs <- c(efm_all_labs[efm_min+1])
     efm_cols <- c(efm_all_cols[efm_min+1])
 
     if (efm_max > efm_min) {
-        for (i in (efm_min+2):(efm_max+1)) {
-        efm_vals <- append(efm_vals, efm_all_vals[i])
-        efm_labs <- append(efm_labs, efm_all_labs[i])
-        efm_cols <- append(efm_cols, efm_all_cols[i])
+        for (i in (efm_min+1):(efm_max)) {
+            if (check_raster_value(sum_r, 1, i)) {
+                efm_labs <- append(efm_labs, efm_all_labs[i+1])
+                efm_cols <- append(efm_cols, efm_all_cols[i+1])
+            }
         }
     }
 
@@ -3771,7 +3882,6 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     #user-specified palette
     } else {
         cmap <- colormap
-        cmap[1] <- "white"
     }
 
     # set titles
@@ -3805,14 +3915,13 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
     graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
 
     if (var == "efmax") {
-        if (raster::maxValue(efm_layer) > 0) {
+        if (terra::minmax(efm_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- "Peak Fujita Scale"
             }
-            arg <- list(at=efm_vals, labels=efm_labs)
-            raster::plot(efm_layer, xlab=xlab, ylab=ylab, main=main_title, axis.args=arg, 
-                legend.args=list(text='  EF Scale', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(efm_layer, xlab=xlab, ylab=ylab, main=main_title, type="classes",
+                plg=list(title="  EF Scale"), levels=efm_labs, all_levels=TRUE, col=cmap)
+            terra::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
                     hur_id <- ii[i, "hur_id"]
@@ -3828,13 +3937,13 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
         }
 
     } else if (var == "ef0") {
-        if (raster::maxValue(ef0_layer) > 0) {
+        if (terra::minmax(ef0_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- "Fujita Scale 0"
             }
-            raster::plot(ef0_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  storms', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ef0_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title='  storms'), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
                     hur_id <- ii[i, "hur_id"]
@@ -3850,13 +3959,13 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
         }
   
     } else if (var == "ef1") {
-        if (raster::maxValue(ef1_layer) > 0) {
+        if (terra::minmax(ef1_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- "Fujita Scale 1"
             }
-            raster::plot(ef1_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  storms', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ef1_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title='  storms'), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
                     hur_id <- ii[i, "hur_id"]
@@ -3872,13 +3981,13 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
         }
 
     } else if (var == "ef2") {
-        if (raster::maxValue(ef2_layer) > 0) {
+        if (terra::minmax(ef2_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- "Fujita Scale 2"
             }
-            raster::plot(ef2_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  storms', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ef2_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title='  storms'), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
                     hur_id <- ii[i, "hur_id"]
@@ -3894,13 +4003,13 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
         }
      
     } else if (var == "ef3") {
-        if (raster::maxValue(ef3_layer) > 0) {
+        if (terra::minmax(ef3_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- "Fujita Scale 3"
             }
-            raster::plot(ef3_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  storms', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ef3_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title='  storms'), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
                     hur_id <- ii[i, "hur_id"]
@@ -3916,13 +4025,13 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
         }
 
     } else if (var == "ef4") {
-        if (raster::maxValue(ef4_layer) > 0) {
+        if (terra::minmax(ef4_layer)[2] > 0) {
             if (main_title == "") {
                 main_title <- "Fujita Scale 4"
             }
-            raster::plot(ef4_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  storms', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(ef4_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title='  storms'), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
                     hur_id <- ii[i, "hur_id"]
@@ -3941,10 +4050,10 @@ hurrecon_plot_region_all <- function(var="efmax", tracks=FALSE, title="",
             if (main_title == "") {
                 main_title <- "Fujita Scale 5"
             }
-        if (raster::maxValue(ef5_layer) > 0) {
-            raster::plot(ef5_layer, xlab=xlab, ylab=ylab, main=main_title, 
-                legend.args=list(text='  storms', line=1), col=cmap)
-            raster::plot(boundaries, add=TRUE)
+        if (terra::minmax(ef5_layer)[2] > 0) {
+            terra::plot(ef5_layer, xlab=xlab, ylab=ylab, main=main_title, type="continuous",
+                plg=list(title='  storms'), col=cmap)
+            terra::plot(boundaries, add=TRUE)
             if (tracks) {
                 for (i in 1:nrow(ii)) {
                     hur_id <- ii[i, "hur_id"]

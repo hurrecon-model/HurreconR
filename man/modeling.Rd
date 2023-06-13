@@ -77,11 +77,11 @@ a data frame of results
 
 a data frame of results
 
-a brick of 6 rasters
+a raster with 10 layers
 
-a brick of 4 rasters
+a raster of 4 layers
 
-a list containing a data frame and a raster brick of summary values
+a list containing a data frame and a raster of summary values
 }
 \description{
 hurrecon_model_site calculates wind speed (meters/second), gust speed 
@@ -109,14 +109,14 @@ If save is TRUE, results are saved as a GeoTiff file on the region subdirectory.
 hurrecon_model_region_dt calculates wind speed (meters/second), enhanced
 Fujita scale, wind direction (degrees), and cardinal wind direction for a
 given hurricane over a region at a specified datetime. If width is TRUE, 
-the radius of maximum wind (rmw) (kilometers) and scaling parameter (s_par) 
-If water is FALSE, results are calculated for land areas only. If save is 
-TRUE, results are saved as a GeoTiff file on the region-dt subdirectory.
+the radius of maximum wind (rmw) and scaling parameter (s_par) specified 
+for the hurricane are used; otherwise values for ALL are used. If water 
+is FALSE, results are calculated for land areas only. If save is TRUE, 
+results are saved as a GeoTiff file on the region-dt subdirectory.
 
-hurrecon_model_region_all calculates peak wind speed (meters/second), 
-peak enhanced Fujita scale, peak wind direction (degrees), peak cardinal 
-wind direction, duration of gale winds (minutes), and duration of hurricane
-winds (minutes) over a region for all hurricanes. If width is TRUE, the 
+hurrecon_model_region_all runs hurrecon_model_region for each hurricane
+and calculates the maximum Fujita value and the number of hurricanes for 
+each Fujita value (EF0-EF5) across a region. If width is TRUE, the 
 radius of maximum wind (rmw) and scaling parameter (s_par) specified for 
 each hurricane is used; otherwise values for ALL are used. If time_step is 
 NULL, the time step is calculated. If water is FALSE, results are calculated 

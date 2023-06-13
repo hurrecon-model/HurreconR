@@ -10,13 +10,14 @@ HURRECON is available in both R (HurreconR) and Python (HurreconPython) versions
 The model is an updated version of the original HURRECON model written in Borland 
 Pascal for use with Idrisi (see below for details).
 
-Please note: both versions are currently under development and subject to change.
+Note: both versions are under development and subject to change.
 
 ## Getting Started
 
 Here are the basic steps for using the model. Please see below for more details.
 
-1. Download the R or Python version of the model from GitHub.
+1. Download the R or Python version of the model from GitHub. The R version is also
+available on CRAN as HurreconR.
 2. Create a directory for a set of related model runs with subdirectories for input 
 and output files (as described below).
 3. Create a site file (<i>sites.csv</i>) with geographic coordinates for one or more 
@@ -117,7 +118,8 @@ Examples of input files may be found on the <i>inst/input</i> subdirectory (R) o
 To run the model, create the above directories, copy the input files to their
 respective subdirectories, and run <i>hurrecon.R</i> (R) or <i>hurrecon.py</i> (Python). 
 
-The R version may also be installed as an R package using the devtools package:
+The R version can be installed as an R package directly from CRAN. It can also be 
+installed from Github using the devtools package:
 
 ```
 devtools::install_github("hurrecon-model/HurreconR")
@@ -146,6 +148,7 @@ hurrecon_model_region_all
 hurrecon_summarize_land_water
 hurrecon_summarize_tracks
 hurrecon_summarize_site
+hurrecon_summarize_region
 
 hurrecon_plot_site
 hurrecon_plot_site_all
@@ -188,7 +191,8 @@ the vertical direction at 20 meters per second, rounded to one of these values:
 The <i>hurrecon_summarize_land_water</i> function displays information about the current
 land-water file. The <i>hurrecon_summarize_tracks</i> function displays information about
 the current track files. The <i>hurrecon_summarize_site</i> function displays peak values 
-for a single hurricane and a single site.
+for a single hurricane and a single site. The <i>hurrecon_summarize_region</i>i> function
+summarizes regional output for a single hurricane.
 
 The <i>hurrecon_plot_site</i> functions create time-series and scatter plots for a single 
 hurricane and time-series plots for all hurricanes for a given site. The 
@@ -201,13 +205,13 @@ for a single hurricane or for all hurricanes.
 Sample commands for the 1935 Florida Keys hurricane and Miami FL:
 
 ```
-hurrecon_reformat_hurdat2(hurdat2_file="hurdat2-1851-2021-041922.txt")
+hurrecon_reformat_hurdat2(hurdat2_file="hurdat2-1851-2022-050423.txt")
 [copy hurdat2_tracks.csv to input_tracks.csv on input subdirectory]
 
 hurrecon_set_path("c:/hurrecon/east_20km")
 hurrecon_get_path()
 
-hurrecon_create_land_water(nrows=150, ncols=180, xmn=-100, xmx=-59, ymn=23, ymx=50)
+hurrecon_create_land_water(nrows=150, ncols=180, xmin=-100, xmax=-59, ymin=23, ymax=50)
 hurrecon_extract_tracks(wind_min=70)
 
 hurrecon_model_site("AL1935-03", "Miami FL")
@@ -219,6 +223,7 @@ hurrecon_model_region_all()
 hurrecon_summarize_land_water()
 hurrecon_summarize_tracks()
 hurrecon_summarize_site("AL1935-03", "Miami FL")
+hurrecon_summarize_region("AL1935-03")
 
 hurrecon_plot_site("AL1935-03", "Miami FL")
 hurrecon_plot_site_all("Miami FL")
