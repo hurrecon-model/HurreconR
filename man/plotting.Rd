@@ -43,7 +43,7 @@ hurrecon_plot_tracks(
 hurrecon_plot_region(
   hur_id,
   var = "fujita_scale",
-  region_all = FALSE,
+  subdir = "region",
   positions = FALSE,
   title = "",
   colormap = "default",
@@ -104,7 +104,8 @@ model input (model), or none (none)}
 
 \item{colormap}{color palette}
 
-\item{region_all}{whether to plot results from hurrecon_model_region_all}
+\item{subdir}{whether to plot results from hurrecon_model_region (region)
+or hurrecon_model_region_all (region-all)}
 
 \item{positions}{whether to plot original positions}
 
@@ -145,8 +146,7 @@ hurrecon_plot_region creates regional plots of peak wind speed, peak
 enhanced Fujita scale, peak wind direction, peak cardinal wind direction,
 and duration of EF0, EF1, EF2, EF3, EF4, and EF5 winds for a given hurricane.
 Variables to plot: wind_speed, fujita_scale, wind_direction, wind_compass, 
-ef0_duration, ef1_duration, ef2_duration, ef3_duration, ef4_duration,
-and ef5_duration.
+ef0, ef1, ef2, ef3, ef4, and ef5.
 
 hurrecon_plot_region_dt creates regional plots of enhanced Fujita scale, 
 wind speed, wind direction, and cardinal wind direction for a given hurricane

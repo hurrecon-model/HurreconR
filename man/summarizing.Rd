@@ -4,6 +4,7 @@
 \alias{hurrecon_summarize_land_water}
 \alias{hurrecon_summarize_tracks}
 \alias{hurrecon_summarize_site}
+\alias{hurrecon_summarize_region}
 \title{Summarizing Functions}
 \usage{
 hurrecon_summarize_land_water(console = TRUE, hur_path = NULL)
@@ -11,6 +12,14 @@ hurrecon_summarize_land_water(console = TRUE, hur_path = NULL)
 hurrecon_summarize_tracks(console = TRUE, hur_path = NULL)
 
 hurrecon_summarize_site(hur_id, site_name, console = TRUE, hur_path = NULL)
+
+hurrecon_summarize_region(
+  filename,
+  layer = 1,
+  subdir = "region",
+  console = TRUE,
+  hur_path = NULL
+)
 }
 \arguments{
 \item{console}{whether to display results in console}
@@ -20,8 +29,17 @@ hurrecon_summarize_site(hur_id, site_name, console = TRUE, hur_path = NULL)
 \item{hur_id}{hurricane id}
 
 \item{site_name}{name of site}
+
+\item{filename}{name of input raster file}
+
+\item{layer}{number of raster layer}
+
+\item{subdir}{subdirectory where raster file is located (region, region-dt, 
+or region-all)}
 }
 \value{
+a string containing summary information
+
 a string containing summary information
 
 a string containing summary information
@@ -32,9 +50,13 @@ a string containing summary information
 hurrecon_summarize_land_water displays information about the current
 land-water file (land_water.tif).
 
-hurrecon_summarize_tracks displays information about the current ids file 
-(ids.csv).
+hurrecon_summarize_tracks displays information about the hurricane tracks
+that are currently selected.
 
 hurrecon_summarize_site displays peak values for a given hurricane
 and site.
+
+hurrecon_summarize_region displays summary information for a specified 
+raster file and layer, including number of layers, number of rows and columns,
+spatial extent, cell height and width, and minimum and maximum value.
 }
