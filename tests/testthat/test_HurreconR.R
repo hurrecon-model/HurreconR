@@ -23,15 +23,15 @@ file.copy(paste0(hur_path, '/input/tracks.csv'), paste0(tdir, '/input/tracks.csv
 test_that("hurrecon_model_site", {
 	hurrecon_model_site(hur_id="AL1935-03", site="Miami FL", msg=FALSE, hur_path=tdir)
 	output_file <- paste0(tdir, "/site/AL1935-03_Miami_FL.csv")
+	df <- read.csv(output_file)
 	announce_snapshot_file(name="hurrecon_model_site")
-	expect_snapshot_value(output_file, style="serialize", cran=FALSE, tolerance=0.001)
+	expect_snapshot_value(df, style="serialize", cran=FALSE, tolerance=0.001)
 })
 
 # test hurrecon_model_region
 test_that("hurrecon_model_region", {
 	hurrecon_model_region(hur_id="AL1935-03", msg=FALSE, hur_path=tdir)
 	output_file <- paste0(tdir, "/region/AL1935-03.tif")
-	announce_snapshot_file(name="hurrecon_model_region")
-	expect_snapshot_value(output_file, style="serialize", cran=FALSE)
+	expect_snapshot_file(output_file, name="hurrecon_model_region", cran=FALSE)
 })
 
