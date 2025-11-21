@@ -1,7 +1,7 @@
 Package: HurreconR
 Title: Models Hurricane Wind Speed, Wind Direction, and Wind Damage
 Version: 1.2
-Date: 2025-11-19
+Date: 2025-11-21
 Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
                       email = "boose@fas.harvard.edu"),
               person("President and Fellows of Harvard College", role = "cph"))

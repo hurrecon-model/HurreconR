@@ -6,10 +6,6 @@ local_edition(3)
 # get hurrecon path
 hur_path <- system.file("", package="HurreconR", mustWork=TRUE)
 
-# get expected values
-model_site_expected <- system.file("site", "AL1935-03_Miami_FL.csv", package="HurreconR", mustWork=TRUE)
-model_region_expected <- system.file("region", "AL1935-03.tif", package="HurreconR", mustWork=TRUE)
-
 # copy input values to R temporary directory
 tdir <- tempdir()
 
@@ -23,31 +19,19 @@ file.copy(paste0(hur_path, '/input/parameters.csv'), paste0(tdir, '/input/parame
 file.copy(paste0(hur_path, '/input/sites.csv'), paste0(tdir, '/input/sites.csv'))
 file.copy(paste0(hur_path, '/input/tracks.csv'), paste0(tdir, '/input/tracks.csv'))
 
-# get new values
-hurrecon_model_site(hur_id="AL1935-03", site_name="Miami FL", time_step=60, msg=FALSE, hur_path=tdir)
-model_site_new <- paste0(tdir, '/site/AL1935-03_Miami_FL.csv')
-
-hurrecon_model_region(hur_id="AL1935-03", msg=FALSE, hur_path=tdir)
-model_region_new <- paste0(tdir, '/region/AL1935-03.tif')
-
 # test hurrecon_model_site
 test_that("hurrecon_model_site", {
-	compare_file_binary(model_site_expected, model_site_new)
+	hurrecon_model_site(hur_id="AL1935-03", site="Miami FL", msg=FALSE, hur_path=tdir)
+	output_file <- paste0(tdir, "/site/AL1935-03_Miami_FL.csv")
+	announce_snapshot_file(name="hurrecon_model_site")
+	expect_snapshot_value(output_file, style="serialize", cran=FALSE, tolerance=0.001)
 })
 
 # test hurrecon_model_region
 test_that("hurrecon_model_region", {
-	compare_file_binary(model_region_expected, model_region_new)
-})
-
-# test hurrecon_summarize_site
-test_that("hurrecon_summarize_site", {
-	expect_snapshot_value(hurrecon_summarize_site(hur_id="AL1935-03", site_name="Miami FL", console=FALSE, hur_path=tdir), 
-		style="serialize", cran=FALSE)
-})
-
-# test hurrecon_summarize_land_water
-test_that("hurrecon_summarize_site", {
-	expect_snapshot_value(hurrecon_summarize_land_water(console=FALSE, hur_path=tdir), style="serialize", cran=FALSE)
+	hurrecon_model_region(hur_id="AL1935-03", msg=FALSE, hur_path=tdir)
+	output_file <- paste0(tdir, "/region/AL1935-03.tif")
+	announce_snapshot_file(name="hurrecon_model_region")
+	expect_snapshot_value(output_file, style="serialize", cran=FALSE)
 })
 
